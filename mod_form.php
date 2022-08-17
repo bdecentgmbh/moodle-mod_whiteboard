@@ -66,16 +66,16 @@ class mod_whiteboard_mod_form extends moodleform_mod {
         $mform->addElement('text', 'boardid', get_string('whiteboardid', 'whiteboard'), array('size' => '48'));
         $mform->setType('boardid', PARAM_TEXT);
         $mform->addRule('boardid', null, 'required', null, 'client');
-	
-	if (count($type) > 1) {
-	        $mform->addElement('select', 'boardtype', get_string('boardtypename', 'whiteboard'), $type);
-        	$mform->setDefault('boardtype', $config->defaultwhiteboard);
-	} else if (!empty($type)) {
-		$board = reset(array_keys($type));
-		$mform->addElement('hidden', 'boardtype', $board);
-	} else {
-		throw new moodle_exception('boardtypenotavailable');
-	}
+
+        if (count($type) > 1) {
+            $mform->addElement('select', 'boardtype', get_string('boardtypename', 'whiteboard'), $type);
+            $mform->setDefault('boardtype', $config->defaultwhiteboard);
+        } else if (!empty($type)) {
+            $board = reset(array_keys($type));
+            $mform->addElement('hidden', 'boardtype', $board);
+        } else {
+            throw new moodle_exception('boardtypenotavailable');
+        }
 
         $this->standard_intro_elements();
 

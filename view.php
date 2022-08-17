@@ -43,7 +43,6 @@ if (!$whiteboard = $DB->get_record('whiteboard', array('id' => $cm->instance))) 
 }
 $context = context_module::instance($cm->id);
 require_capability('mod/whiteboard:view', $context);
-$PAGE->add_body_class('limitedwidth');
 $PAGE->set_title($course->shortname.': '.$whiteboard->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($whiteboard);
