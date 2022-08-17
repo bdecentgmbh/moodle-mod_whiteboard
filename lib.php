@@ -81,14 +81,16 @@ function whiteboard_delete_instance($id) {
  */
 function whiteboard_view_board($whiteboard) {
     global $CFG, $DB, $OUTPUT;
-    $urlmiro = "https://miro.com/app/live-embed";
-    $urlconceptboard = " https://app.conceptboard.com/board/";
+    $parseurl = parse_url($CFG->wwwroot);
+    $protocal = isset($parseurl['scheme']) ? $parseurl['scheme'] : "https";
+    $urlmiro = "miro.com/app/live-embed";
+    $urlconceptboard = "app.conceptboard.com/board/";
     $boardid = $whiteboard->boardid;
 
     if ($whiteboard->boardtype == 'miro') {
-        $url = $urlmiro ."/". $boardid;
+        $url = $protocal. "://" . $urlmiro ."/". $boardid;
     } else {
-        $url = $urlconceptboard ."/". $boardid;
+        $url = $protocal. "://" . $urlconceptboard ."/". $boardid;
     }
 
     $templatecontext = [
@@ -103,9 +105,13 @@ function whiteboard_view_board($whiteboard) {
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function whiteboard_supports($feature) {
+
+    // Add for FEATURE_MOD_PURPOSE.
+    if (defined('FEATURE_MOD_PURPOSE') && $feature === FEATURE_MOD_PURPOSE) {
+        return MOD_PURPOSE_COMMUNICATION;
+    }
+
     switch($feature) {
-        case FEATURE_MOD_ARCHETYPE:
-            return MOD_ARCHETYPE_RESOURCE;
         case FEATURE_GROUPS:
             return false;
         case FEATURE_GROUPINGS:
