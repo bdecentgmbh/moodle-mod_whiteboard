@@ -28,5 +28,5 @@ $plugin->version   = 2022081701;
 $plugin->requires  = 2022041200;
 $plugin->component = 'mod_whiteboard';
 $plugin->release = '1.0';
-$plugin->maturity = MATURITY_STABLE;
-
+$plugin->supported = [400, 400];
+$plugin->maturity  = MATURITY_RC;
