@@ -15,18 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Whiteboard module version information
+ * Upgrade script for the whiteboard.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2022081800;
-$plugin->requires  = 2022041200;
-$plugin->component = 'mod_whiteboard';
-$plugin->release = '1.0';
-$plugin->maturity = MATURITY_STABLE;
-
+/**
+ * Uggrede plugin
+ *
+ * @param string $oldversion the version we are upgrading from.
+ */
+function xmldb_whiteboard_upgrade($oldversion) {
+    return true;
+}
