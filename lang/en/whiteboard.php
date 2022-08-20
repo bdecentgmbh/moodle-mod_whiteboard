@@ -40,3 +40,4 @@ $string['strconceptboard'] = "Conceptboard";
 $string['pluginadministration'] = 'Whiteboard module administration';
 $string['whiteboard:addinstance'] = 'Add a new whiteboard resource';
 $string['whiteboard:view'] = 'View whiteboard content';
+$string['privacy:metadata'] = 'The whiteboard plugin does not store any personal data.';

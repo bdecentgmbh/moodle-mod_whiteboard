@@ -15,19 +15,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Whiteboard module version information
+ * Privacy implementation for mod_whiteboard.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace mod_whiteboard\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2022082000;
-$plugin->requires  = 2022041200;
-$plugin->component = 'mod_whiteboard';
-$plugin->release = '1.0';
-$plugin->supported = [400, 400];
-$plugin->maturity = MATURITY_RC;
+/**
+ * The mod_whiteboard module does not store any data.
+ *
+ * @copyright  2022 bdecent gmbh <https://bdecent.de>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}
 
