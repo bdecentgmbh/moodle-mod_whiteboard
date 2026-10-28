@@ -34,8 +34,12 @@ function whiteboard_add_instance($whiteboard, $mform = null) {
     $whiteboard->timecreated = time();
     $whiteboard->id = $DB->insert_record('whiteboard', $whiteboard);
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
-    \core_completion\api::update_completion_date_event($whiteboard->coursemodule,
-        'whiteboard', $whiteboard->id, $completiontimeexpected);
+    \core_completion\api::update_completion_date_event(
+        $whiteboard->coursemodule,
+        'whiteboard',
+        $whiteboard->id,
+        $completiontimeexpected
+    );
     return $whiteboard->id;
 }
 
@@ -51,10 +55,13 @@ function whiteboard_update_instance($whiteboard, $mform) {
     $whiteboard->timemodified = time();
     $DB->update_record('whiteboard', $whiteboard);
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
-    \core_completion\api::update_completion_date_event($whiteboard->coursemodule,
-        'whiteboard', $whiteboard->id, $completiontimeexpected);
+    \core_completion\api::update_completion_date_event(
+        $whiteboard->coursemodule,
+        'whiteboard',
+        $whiteboard->id,
+        $completiontimeexpected
+    );
     return true;
-
 }
 
 /**
@@ -65,12 +72,12 @@ function whiteboard_update_instance($whiteboard, $mform) {
 function whiteboard_delete_instance($id) {
     global $CFG, $DB;
 
-    if (!$whiteboard = $DB->get_record('whiteboard', array('id' => $id))) {
+    if (!$whiteboard = $DB->get_record('whiteboard', ['id' => $id])) {
         return false;
     }
     $cm = get_coursemodule_from_instance('whiteboard', $id);
     \core_completion\api::update_completion_date_event($cm->id, 'whiteboard', $id, null);
-    $DB->delete_records('whiteboard', array('id' => $whiteboard->id));
+    $DB->delete_records('whiteboard', ['id' => $whiteboard->id]);
     return true;
 }
 
@@ -88,9 +95,9 @@ function whiteboard_view_board($whiteboard) {
     $boardid = $whiteboard->boardid;
 
     if ($whiteboard->boardtype == 'miro') {
-        $url = $protocal. "://" . $urlmiro ."/". $boardid;
+        $url = $protocal . "://" . $urlmiro . "/" . $boardid;
     } else {
-        $url = $protocal. "://" . $urlconceptboard ."/". $boardid;
+        $url = $protocal . "://" . $urlconceptboard . "/" . $boardid;
     }
 
     $templatecontext = [
@@ -111,7 +118,7 @@ function whiteboard_supports($feature) {
         return MOD_PURPOSE_COMMUNICATION;
     }
 
-    switch($feature) {
+    switch ($feature) {
         case FEATURE_GROUPS:
             return false;
         case FEATURE_GROUPINGS:
@@ -147,10 +154,10 @@ function whiteboard_supports($feature) {
 function whiteboard_view($whiteboard, $course, $cm, $context) {
 
     // Trigger course_module_viewed event.
-    $params = array(
+    $params = [
         'context' => $context,
-        'objectid' => $whiteboard->id
-    );
+        'objectid' => $whiteboard->id,
+    ];
 
     $event = \mod_whiteboard\event\course_module_viewed::create($params);
     $event->add_record_snapshot('course_modules', $cm);
@@ -211,7 +218,7 @@ function whiteboard_reset_userdata($data) {
     // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
     // See MDL-9367.
 
-    return array();
+    return [];
 }
 
 
@@ -226,7 +233,7 @@ function whiteboard_reset_userdata($data) {
  * @return array
  */
 function whiteboard_get_view_actions() {
-    return array('view', 'view all');
+    return ['view', 'view all'];
 }
 
 /**
@@ -240,7 +247,7 @@ function whiteboard_get_view_actions() {
  * @return array
  */
 function whiteboard_get_post_actions() {
-    return array('update', 'add');
+    return ['update', 'add'];
 }
 
 
@@ -257,12 +264,19 @@ function whiteboard_get_post_actions() {
 function whiteboard_get_coursemodule_info($coursemodule) {
     global $CFG, $DB;
 
-    if ($whiteboard = $DB->get_record('whiteboard', array('id' => $coursemodule->instance),
-        'id, name, intro, introformat', 'boardtype', 'boardid')) {
+    if (
+        $whiteboard = $DB->get_record(
+            'whiteboard',
+            ['id' => $coursemodule->instance],
+            'id, name, intro, introformat',
+            'boardtype',
+            'boardid'
+        )
+    ) {
         if (empty($whiteboard->name)) {
             // Label name missing, fix it.
             $whiteboard->name = "whiteboard{$whiteboard->id}";
-            $DB->set_field('whiteboard', 'name', $whiteboard->name, array('id' => $whiteboard->id));
+            $DB->set_field('whiteboard', 'name', $whiteboard->name, ['id' => $whiteboard->id]);
         }
         $info = new cached_cm_info();
         $info->name  = $whiteboard->name;
@@ -271,8 +285,3 @@ function whiteboard_get_coursemodule_info($coursemodule) {
         return null;
     }
 }
-
-
-
-
-

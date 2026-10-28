@@ -24,14 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once($CFG->dirroot.'/mod/whiteboard/lib.php');
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/mod/whiteboard/lib.php');
 
 /**
  * Whiteboard module form.
  */
 class mod_whiteboard_mod_form extends moodleform_mod {
-
     /**
      * Define the mform.
      */
@@ -43,7 +42,7 @@ class mod_whiteboard_mod_form extends moodleform_mod {
         $mform->addElement('header', 'general', get_string('general', 'form'));
         // Select the type.
         $config = get_config('whiteboard');
-        $mform->addElement('text', 'name', get_string('name'), array('size' => '48'));
+        $mform->addElement('text', 'name', get_string('name'), ['size' => '48']);
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -54,7 +53,7 @@ class mod_whiteboard_mod_form extends moodleform_mod {
 
         $miro = isset($config->enable_miro) ? $config->enable_miro : '';
         $conceptboard = isset($config->enable_conceptboard) ? $config->enable_conceptboard : '';
-        $type = array();
+        $type = [];
         if ($miro) {
             $type['miro'] = get_string('MIRO', 'whiteboard');
         }
@@ -63,7 +62,7 @@ class mod_whiteboard_mod_form extends moodleform_mod {
         }
 
         // Board ID.
-        $mform->addElement('text', 'boardid', get_string('whiteboardid', 'whiteboard'), array('size' => '48'));
+        $mform->addElement('text', 'boardid', get_string('whiteboardid', 'whiteboard'), ['size' => '48']);
         $mform->setType('boardid', PARAM_TEXT);
         $mform->addRule('boardid', null, 'required', null, 'client');
 

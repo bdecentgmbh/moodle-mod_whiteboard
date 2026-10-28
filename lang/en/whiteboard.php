@@ -22,22 +22,22 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = "Whiteboard";
-$string['MIRO'] = "MIRO";
 $string['Conceptboard'] = "Conceptboard";
+$string['MIRO'] = "MIRO";
 $string['boardtypename'] = "Type";
-$string['whiteboardid'] = "Board ID";
-$string['modulename'] = "Whiteboard";
-$string['general'] = "General";
-$string['enable_miro'] = "Enabe MIRO board type";
-$string['configenable_miro'] = 'Choose to "Disable", if you don\'t want to show the MIRO board on the whiteboard module.';
-$string['enable_conceptboard'] = "Enable Concept board type";
 $string['configenable_conceptboard'] = 'Choose to "Disable", if you don\'t want to show the Conceptboard board on the whiteboard module.';
-$string['modulenameplural'] = 'Whiteboards';
+$string['configenable_miro'] = 'Choose to "Disable", if you don\'t want to show the MIRO board on the whiteboard module.';
 $string['defaultwhiteboard'] = "Default board";
-$string['strmiro'] = "MIRO";
-$string['strconceptboard'] = "Conceptboard";
+$string['enable_conceptboard'] = "Enable Concept board type";
+$string['enable_miro'] = "Enabe MIRO board type";
+$string['general'] = "General";
+$string['modulename'] = "Whiteboard";
+$string['modulenameplural'] = 'Whiteboards';
 $string['pluginadministration'] = 'Whiteboard module administration';
+$string['pluginname'] = "Whiteboard";
+$string['privacy:metadata'] = 'The whiteboard plugin does not store any personal data.';
+$string['strconceptboard'] = "Conceptboard";
+$string['strmiro'] = "MIRO";
 $string['whiteboard:addinstance'] = 'Add a new whiteboard resource';
 $string['whiteboard:view'] = 'View whiteboard content';
-$string['privacy:metadata'] = 'The whiteboard plugin does not store any personal data.';
+$string['whiteboardid'] = "Board ID";

@@ -25,12 +25,19 @@
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_configcheckbox(
+        'whiteboard/enable_miro',
+        get_string('enable_miro', 'mod_whiteboard'),
+        get_string('configenable_miro', 'mod_whiteboard'),
+        true
+    ));
 
-    $settings->add(new admin_setting_configcheckbox('whiteboard/enable_miro',
-        get_string('enable_miro', 'mod_whiteboard'), get_string('configenable_miro', 'mod_whiteboard'), true));
-
-    $settings->add(new admin_setting_configcheckbox('whiteboard/enable_conceptboard',
-        get_string('enable_conceptboard', 'mod_whiteboard'), get_string('configenable_conceptboard', 'mod_whiteboard'), true));
+    $settings->add(new admin_setting_configcheckbox(
+        'whiteboard/enable_conceptboard',
+        get_string('enable_conceptboard', 'mod_whiteboard'),
+        get_string('configenable_conceptboard', 'mod_whiteboard'),
+        true
+    ));
 
     // Default board.
     $name = "whiteboard/defaultwhiteboard";
@@ -38,7 +45,7 @@ if ($ADMIN->fulltree) {
     $description = "";
     $options = [
         'miro' => get_string('strmiro', 'mod_whiteboard'),
-        'conceptboard' => get_string('strconceptboard', 'mod_whiteboard')
+        'conceptboard' => get_string('strconceptboard', 'mod_whiteboard'),
     ];
     $setting = new admin_setting_configselect($name, $title, $description, 'miro', $options);
     $settings->add($setting);

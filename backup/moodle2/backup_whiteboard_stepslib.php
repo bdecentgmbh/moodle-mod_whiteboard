@@ -27,7 +27,6 @@
  * Define the complete whiteboard structure for backup, with file and id annotations
  */
 class backup_whiteboard_activity_structure_step extends backup_activity_structure_step {
-
     /**
      * Define structure.
      * @return void
@@ -37,14 +36,14 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
         // The whiteboard module stores no user info.
 
         // Define each element separated.
-        $whiteboard = new backup_nested_element('whiteboard', array('id'), array(
+        $whiteboard = new backup_nested_element('whiteboard', ['id'], [
             'name', 'intro', 'introformat', 'boardtype',
-            'boardid', 'timecreated', 'timemodified'));
+            'boardid', 'timecreated', 'timemodified']);
 
         // Build the tree.
 
         // Define sources.
-        $whiteboard->set_source_table('whiteboard', array('id' => backup::VAR_ACTIVITYID));
+        $whiteboard->set_source_table('whiteboard', ['id' => backup::VAR_ACTIVITYID]);
 
         // Define id annotations.
         // Module has no id annotations.
@@ -54,7 +53,5 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
 
         // Return the root element (whiteboard), wrapped into standard activity structure.
         return $this->prepare_activity_structure($whiteboard);
-
     }
 }
-

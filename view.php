@@ -32,18 +32,18 @@ if (!$cm = get_coursemodule_from_id('whiteboard', $id)) {
     throw new moodle_exception('invalidcoursemodule'); // NOTE this is invalid use of print_error, must be a lang string id.
 }
 
-$PAGE->set_url('/mod/whiteboard/view.php', array('id' => $cm->id));
+$PAGE->set_url('/mod/whiteboard/view.php', ['id' => $cm->id]);
 
-if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
+if (!$course = $DB->get_record('course', ['id' => $cm->course])) {
     throw new moodle_exception('invalidcourse');  // NOTE As above.
 }
 require_course_login($course, false, $cm);
-if (!$whiteboard = $DB->get_record('whiteboard', array('id' => $cm->instance))) {
+if (!$whiteboard = $DB->get_record('whiteboard', ['id' => $cm->instance])) {
     throw new moodle_exception('course module is incorrect'); // NOTE As above.
 }
 $context = context_module::instance($cm->id);
 require_capability('mod/whiteboard:view', $context);
-$PAGE->set_title($course->shortname.': '.$whiteboard->name);
+$PAGE->set_title($course->shortname . ': ' . $whiteboard->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($whiteboard);
 

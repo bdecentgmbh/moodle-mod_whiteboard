@@ -33,7 +33,6 @@ namespace mod_whiteboard\event;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_module_viewed extends \core\event\course_module_viewed {
-
     /**
      * Init method.
      */
@@ -48,7 +47,6 @@ class course_module_viewed extends \core\event\course_module_viewed {
      * @return array
      */
     public static function get_objectid_mapping() {
-        return array('db' => 'whiteboard', 'restore' => 'whiteboard');
+        return ['db' => 'whiteboard', 'restore' => 'whiteboard'];
     }
 }
-

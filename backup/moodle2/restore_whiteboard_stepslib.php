@@ -27,13 +27,12 @@
  * Structure step to restore one whiteboard activity
  */
 class restore_whiteboard_activity_structure_step extends restore_activity_structure_step {
-
     /**
      * Define structure.
      */
     protected function define_structure() {
 
-        $paths = array();
+        $paths = [];
         $paths[] = new restore_path_element('whiteboard', '/activity/whiteboard');
 
         // Return the paths wrapped into standard activity structure.
@@ -68,4 +67,3 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
         $this->add_related_files('mod_whiteboard', 'intro', null);
     }
 }
-
