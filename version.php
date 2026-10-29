@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026102800;
+$plugin->version   = 2026102900;
 $plugin->requires  = 2024100700; // Moodle 4.5.
 $plugin->component = 'mod_whiteboard';
 $plugin->release = '1.1';

@@ -67,13 +67,38 @@ class mod_whiteboard_mod_form extends moodleform_mod {
 
         $this->standard_intro_elements();
 
+        // In group mode, each group can have a board of its own.
+        $groups = $this->get_groups();
+        if ($groups) {
+            $mform->addElement('header', 'groupboards', get_string('groupboards', 'mod_whiteboard'));
+            $mform->addElement('static', 'groupboardsinfo', '', get_string('groupboards_desc', 'mod_whiteboard'));
+            foreach ($groups as $group) {
+                $name = "groupboard[{$group->id}]";
+                $mform->addElement('text', $name, format_string($group->name), ['size' => '64']);
+                $mform->setType($name, PARAM_RAW_TRIMMED);
+                $mform->hideIf($name, 'groupmode', 'eq', NOGROUPS);
+            }
+        }
+
         $this->standard_coursemodule_elements();
 
         $this->add_action_buttons();
     }
 
     /**
-     * Checks that the board link belongs to an enabled service.
+     * Loads the boards of the groups.
+     *
+     * @param array $defaultvalues
+     */
+    public function data_preprocessing(&$defaultvalues) {
+        parent::data_preprocessing($defaultvalues);
+        if (!empty($defaultvalues['instance'])) {
+            $defaultvalues['groupboard'] = \mod_whiteboard\group_boards::get($defaultvalues['instance']);
+        }
+    }
+
+    /**
+     * Checks that the board links belong to an enabled service.
      *
      * @param array $data
      * @param array $files
@@ -81,15 +106,42 @@ class mod_whiteboard_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
-        $link = service::link_from_input($data['boardurl'] ?? '');
-        if (strlen($link) > service::MAX_LINK_LENGTH) {
-            $errors['boardurl'] = get_string('maximumchars', '', service::MAX_LINK_LENGTH);
-        } else if (!service::find($link)) {
-            $names = $this->get_service_names();
-            $errors['boardurl'] = $names ? get_string('unsupportedlink', 'mod_whiteboard', $names)
-                : get_string('noservices', 'mod_whiteboard');
+        if ($error = $this->check_link($data['boardurl'] ?? '')) {
+            $errors['boardurl'] = $error;
+        }
+        foreach ((array)($data['groupboard'] ?? []) as $groupid => $input) {
+            if (trim((string)$input) !== '' && ($error = $this->check_link((string)$input))) {
+                $errors["groupboard[{$groupid}]"] = $error;
+            }
         }
         return $errors;
+    }
+
+    /**
+     * Checks that a link or embed code is a board of an enabled service.
+     *
+     * @param string $input
+     * @return string|null The error, null if the link is fine.
+     */
+    protected function check_link(string $input): ?string {
+        $link = service::link_from_input($input);
+        if (strlen($link) > service::MAX_LINK_LENGTH) {
+            return get_string('maximumchars', '', service::MAX_LINK_LENGTH);
+        }
+        if (!service::find($link)) {
+            $names = $this->get_service_names();
+            return $names ? get_string('unsupportedlink', 'mod_whiteboard', $names) : get_string('noservices', 'mod_whiteboard');
+        }
+        return null;
+    }
+
+    /**
+     * Returns the groups of the course that can have a board: the groups that take part in activities.
+     *
+     * @return stdClass[]
+     */
+    protected function get_groups(): array {
+        return groups_get_all_groups($this->get_course()->id, 0, 0, 'g.id, g.name', false, true);
     }
 
     /**

@@ -101,5 +101,24 @@ function xmldb_whiteboard_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026102800, 'whiteboard');
     }
 
+    if ($oldversion < 2026102900) {
+        // In group mode, each group can have a board of its own.
+        $table = new xmldb_table('whiteboard_board');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('whiteboard', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('groupid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('boardurl', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('whiteboard', XMLDB_KEY_FOREIGN, ['whiteboard'], 'whiteboard', ['id']);
+        $table->add_key('groupid', XMLDB_KEY_FOREIGN, ['groupid'], 'groups', ['id']);
+        $table->add_index('whiteboardgroup', XMLDB_INDEX_UNIQUE, ['whiteboard', 'groupid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026102900, 'whiteboard');
+    }
+
     return true;
 }

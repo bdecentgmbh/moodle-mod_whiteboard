@@ -38,14 +38,19 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
         // Define each element separated.
         $whiteboard = new backup_nested_element('whiteboard', ['id'], [
             'name', 'intro', 'introformat', 'boardurl', 'timecreated', 'timemodified']);
+        $boards = new backup_nested_element('boards');
+        $board = new backup_nested_element('board', ['id'], ['groupid', 'boardurl', 'timemodified']);
 
         // Build the tree.
+        $whiteboard->add_child($boards);
+        $boards->add_child($board);
 
         // Define sources.
         $whiteboard->set_source_table('whiteboard', ['id' => backup::VAR_ACTIVITYID]);
+        $board->set_source_table('whiteboard_board', ['whiteboard' => backup::VAR_PARENTID]);
 
         // Define id annotations.
-        // Module has no id annotations.
+        $board->annotate_ids('group', 'groupid');
 
         // Define file annotations.
         $whiteboard->annotate_files('mod_whiteboard', 'intro', null); // This file area hasn't itemid.

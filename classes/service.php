@@ -352,21 +352,28 @@ class service {
     }
 
     /**
-     * Counts the activities of each service.
+     * Counts the activities of each service: activities whose board, or the board of one of their groups, it has.
      *
      * @param stdClass[] $services
      * @return int[] Number of activities by service id.
      */
     public static function count_activities(array $services): array {
         global $DB;
-        $counts = array_fill_keys(array_keys($services), 0);
-        $rs = $DB->get_recordset('whiteboard', null, '', 'id, boardurl');
-        foreach ($rs as $whiteboard) {
-            if ($service = self::find((string)$whiteboard->boardurl, $services)) {
-                $counts[$service->id]++;
+        $used = [];
+        $sql = 'SELECT id AS whiteboard, boardurl FROM {whiteboard}
+                 UNION ALL
+                SELECT whiteboard, boardurl FROM {whiteboard_board}';
+        $rs = $DB->get_recordset_sql($sql);
+        foreach ($rs as $board) {
+            if ($service = self::find((string)$board->boardurl, $services)) {
+                $used[$service->id][$board->whiteboard] = true;
             }
         }
         $rs->close();
+        $counts = [];
+        foreach ($services as $id => $service) {
+            $counts[$id] = count($used[$id] ?? []);
+        }
         return $counts;
     }
 

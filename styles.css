@@ -7,6 +7,25 @@
     border-radius: var(--bs-border-radius, 0.25rem);
 }
 
-.mod_whiteboard-newtab {
-    margin: 0.5rem 0 0;
+.mod_whiteboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Theatre mode uses the popup layout, which keeps space for a navbar it doesn't show. */
+#page-mod-whiteboard-view.pagelayout-popup #page {
+    margin-top: 0;
+}
+
+.mod_whiteboard-theatre-bar {
+    gap: 0.25rem;
+    min-height: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.mod_whiteboard-theatre .mod_whiteboard-frame {
+    height: calc(100vh - 5rem);
+    min-height: 320px;
 }

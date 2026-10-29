@@ -27,8 +27,9 @@ If the link is not from a supported service, the form tells you which services a
 
 ## What students see
 
-- **In the page**: most boards are shown right in the activity page, with **Open in a new tab**
-  below it for working on a large screen or when the service asks to sign in.
+- **In the page**: most boards are shown right in the activity page. Above the board,
+  **Theatre mode** shows nothing but the board, its name and buttons to open it in a new tab and to
+  exit, for working on a large board. **Open in a new tab** helps when the service asks to sign in.
 - **In a new tab**: some services do not allow other websites to show their boards. For those, the
   activity page has an **Open the board** button instead.
 
@@ -53,6 +54,20 @@ happens in the whiteboard service.
 
 ## A board per group
 
-The whiteboard has no group mode. To give each group a board of its own, create a board per group
-in the service, add a whiteboard for each, and restrict each whiteboard to its group with *Restrict
-access*.
+In group mode, each group can work on a board of its own, in one whiteboard:
+
+1. Create a board for each group in the whiteboard service and share it.
+2. In the settings of the whiteboard, choose *Separate groups* or *Visible groups* as **Group mode**
+   under *Common module settings*.
+3. Under **Group boards**, paste the link or embed code of each group's board next to the group.
+   This section is only there if the course has groups.
+
+Students see the board of their group. With *Visible groups*, they can also switch to the boards of
+the other groups. You switch between the groups with the group selector above the board.
+
+The board link of the whiteboard remains the board for everyone else: for groups you left empty,
+for students without a group, and for *All participants*.
+
+Whoever has the link of a board can usually open it, depending on how it is shared in the service.
+With *Separate groups*, students only get the link of their own group's board; with *Visible
+groups*, they get the links of all groups' boards.

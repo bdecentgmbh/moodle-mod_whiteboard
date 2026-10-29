@@ -14,6 +14,9 @@ teachers add it by pasting its link.
   changes to the plugin. A new site starts with Miro, TaskCards, Collaboard and Conceptboard.
 - **In the page or in a new tab**: boards are shown in the activity page, or open in a new tab for
   services that do not allow other websites to show their boards.
+- **Theatre mode**: nothing but the board, its name and buttons to open it in a new tab and to exit.
+- **A board per group**: in group mode, each group works on a board of its own; teachers switch
+  between the groups' boards with Moodle's group selector.
 - **Import and export** of services as JSON, to share them between sites.
 - **Activity completion** when students view the whiteboard, and the description on the course page.
 - **Backup and restore**, duplicating and importing.

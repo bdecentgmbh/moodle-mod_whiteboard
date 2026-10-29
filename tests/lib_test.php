@@ -44,14 +44,15 @@ final class lib_test extends \advanced_testcase {
     }
 
     /**
-     * The whiteboard is a collaboration activity with a description, completion on view and backup.
+     * The whiteboard is a collaboration activity with groups, a description, completion on view and backup.
      */
     public function test_supports(): void {
         $this->assertSame(MOD_PURPOSE_COLLABORATION, whiteboard_supports(FEATURE_MOD_PURPOSE));
         $this->assertTrue(whiteboard_supports(FEATURE_SHOW_DESCRIPTION));
         $this->assertTrue(whiteboard_supports(FEATURE_COMPLETION_TRACKS_VIEWS));
         $this->assertTrue(whiteboard_supports(FEATURE_BACKUP_MOODLE2));
-        $this->assertFalse(whiteboard_supports(FEATURE_GROUPS));
+        $this->assertTrue(whiteboard_supports(FEATURE_GROUPS));
+        $this->assertTrue(whiteboard_supports(FEATURE_GROUPINGS));
         $this->assertFalse(whiteboard_supports(FEATURE_GRADE_HAS_GRADE));
         $this->assertNull(whiteboard_supports(FEATURE_COMMENT));
     }
@@ -88,15 +89,50 @@ final class lib_test extends \advanced_testcase {
     }
 
     /**
-     * Deleting removes the whiteboard.
+     * The boards of groups are saved with the whiteboard, as links.
+     */
+    public function test_add_update_instance_group_boards(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $groupa = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $groupb = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
+            'course' => $course->id,
+            'groupmode' => SEPARATEGROUPS,
+            'groupboard' => [
+                $groupa->id => '<iframe src="https://www.taskcards.de/#/board/a"></iframe>',
+                $groupb->id => '',
+            ],
+        ]);
+        $this->assertSame([$groupa->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($whiteboard->id));
+
+        $cm = get_coursemodule_from_id('whiteboard', $whiteboard->cmid);
+        whiteboard_update_instance((object)[
+            'instance' => $whiteboard->id,
+            'coursemodule' => $cm->id,
+            'name' => 'Ideas',
+            'boardurl' => 'https://miro.com/app/board/x=/',
+            'groupboard' => [$groupa->id => ' ', $groupb->id => 'https://www.taskcards.de/#/board/b'],
+        ]);
+        $this->assertSame([$groupb->id => 'https://www.taskcards.de/#/board/b'], group_boards::get($whiteboard->id));
+    }
+
+    /**
+     * Deleting removes the whiteboard and the boards of its groups.
      */
     public function test_delete_instance(): void {
         global $DB;
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
-        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', ['course' => $course->id]);
+        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
+            'course' => $course->id,
+            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
+        ]);
         $this->assertTrue(whiteboard_delete_instance($whiteboard->id));
         $this->assertFalse($DB->record_exists('whiteboard', ['id' => $whiteboard->id]));
+        $this->assertFalse($DB->record_exists('whiteboard_board', ['whiteboard' => $whiteboard->id]));
         $this->assertFalse(whiteboard_delete_instance($whiteboard->id));
     }
 

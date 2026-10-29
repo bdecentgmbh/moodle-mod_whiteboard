@@ -37,6 +37,7 @@ final class backup_restore_test extends \advanced_testcase {
         global $CFG;
         require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
         require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
+        require_once($CFG->dirroot . '/course/lib.php');
         parent::setUpBeforeClass();
     }
 
@@ -108,6 +109,54 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame('Ideas', $restored->name);
         $this->assertSame('Add your ideas', $restored->intro);
         $this->assertSame('https://www.taskcards.de/#/board/43cc9837-9499-40ff-b6a9-d47eb96b024f', $restored->boardurl);
+    }
+
+    /**
+     * A copied course has the boards of the groups, for the copies of the groups.
+     */
+    public function test_backup_restore_group_boards(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id, 'name' => 'Team A']);
+        $this->getDataGenerator()->create_module('whiteboard', [
+            'course' => $course->id,
+            'groupmode' => SEPARATEGROUPS,
+            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
+        ]);
+
+        $newcourseid = $this->restore($this->backup($course->id), $course->category);
+
+        $restored = $DB->get_record('whiteboard', ['course' => $newcourseid], '*', MUST_EXIST);
+        $newgroup = $DB->get_record('groups', ['courseid' => $newcourseid, 'name' => 'Team A'], '*', MUST_EXIST);
+        $this->assertSame([$newgroup->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($restored->id));
+    }
+
+    /**
+     * A duplicated whiteboard has the boards of the same groups.
+     */
+    public function test_duplicate_group_boards(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
+            'course' => $course->id,
+            'groupmode' => SEPARATEGROUPS,
+            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
+        ]);
+
+        if (method_exists(\core_courseformat\local\cmactions::class, 'duplicate')) {
+            // Moodle 5.2 and later.
+            $newcm = \core_courseformat\formatactions::cm($course)->duplicate($whiteboard->cmid);
+        } else {
+            $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($whiteboard->cmid));
+        }
+
+        $this->assertSame([$group->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($newcm->instance));
     }
 
     /**

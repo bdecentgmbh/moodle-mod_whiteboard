@@ -5,10 +5,12 @@ has added to the course. You open it like any other activity.
 
 ## Working on the board
 
-- Most boards are shown right in the activity page. Use **Open in a new tab** below the board to
-  work on it in a larger window.
+- Most boards are shown right in the activity page. **Theatre mode** above the board shows nothing
+  but the board, for as much room as possible; **Open in a new tab** opens it in a tab of its own.
 - Some boards open in a new tab with **Open the board**, because the service does not allow other
   websites to show them.
+- If you work in groups, you see the board of your group. Sometimes you can also look at the boards
+  of the other groups by choosing a group above the board.
 - Depending on the service and on how your teacher shared the board, you may have to sign in to the
   service, or you may only be able to look at the board. Your teacher tells you if you need an
   account.

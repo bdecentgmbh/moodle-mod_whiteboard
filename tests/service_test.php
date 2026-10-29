@@ -197,15 +197,19 @@ final class service_test extends \advanced_testcase {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator();
+        $group = $generator->create_group(['courseid' => $course->id]);
         $generator->create_module('whiteboard', ['course' => $course->id]);
-        $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://miro.com/app/live-embed/a=/']);
+        $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://miro.com/app/live-embed/a=/',
+            'groupboard' => [$group->id => 'https://miro.com/app/board/b=/']]);
+        $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://example.org/board/a',
+            'groupboard' => [$group->id => 'https://web.collaboard.app/share/c']]);
         $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://www.taskcards.de/#/board/a']);
         $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://example.org/board/a']);
 
         $services = service::get_all();
         $counts = service::count_activities($services);
         $byname = array_combine(array_column($services, 'name'), array_map(fn($s) => $counts[$s->id], $services));
-        $this->assertSame(['Collaboard' => 0, 'Conceptboard' => 0, 'Miro' => 2, 'TaskCards' => 1], $byname);
+        $this->assertSame(['Collaboard' => 1, 'Conceptboard' => 0, 'Miro' => 2, 'TaskCards' => 1], $byname);
     }
 
     /**

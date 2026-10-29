@@ -35,6 +35,7 @@ function whiteboard_add_instance($whiteboard, $mform = null) {
     $whiteboard->timecreated = time();
     $whiteboard->timemodified = $whiteboard->timecreated;
     $whiteboard->id = $DB->insert_record('whiteboard', $whiteboard);
+    \mod_whiteboard\group_boards::save($whiteboard->id, (array)($whiteboard->groupboard ?? []));
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
     \core_completion\api::update_completion_date_event(
         $whiteboard->coursemodule,
@@ -58,6 +59,7 @@ function whiteboard_update_instance($whiteboard, $mform = null) {
     $whiteboard->boardurl = \mod_whiteboard\service::link_from_input($whiteboard->boardurl ?? '');
     $whiteboard->timemodified = time();
     $DB->update_record('whiteboard', $whiteboard);
+    \mod_whiteboard\group_boards::save($whiteboard->id, (array)($whiteboard->groupboard ?? []));
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
     \core_completion\api::update_completion_date_event(
         $whiteboard->coursemodule,
@@ -83,6 +85,7 @@ function whiteboard_delete_instance($id) {
     if ($cm = get_coursemodule_from_instance('whiteboard', $id)) {
         \core_completion\api::update_completion_date_event($cm->id, 'whiteboard', $id, null);
     }
+    \mod_whiteboard\group_boards::delete_for_whiteboard($whiteboard->id);
     $DB->delete_records('whiteboard', ['id' => $whiteboard->id]);
     return true;
 }
@@ -95,11 +98,11 @@ function whiteboard_delete_instance($id) {
  */
 function whiteboard_supports($feature) {
     switch ($feature) {
-        case FEATURE_GROUPS:
-        case FEATURE_GROUPINGS:
         case FEATURE_GRADE_HAS_GRADE:
         case FEATURE_GRADE_OUTCOMES:
             return false;
+        case FEATURE_GROUPS:
+        case FEATURE_GROUPINGS:
         case FEATURE_MOD_INTRO:
         case FEATURE_COMPLETION_TRACKS_VIEWS:
         case FEATURE_BACKUP_MOODLE2:

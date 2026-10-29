@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_whiteboard\group_boards;
 use mod_whiteboard\service;
 
 require(__DIR__ . '/../../config.php');
@@ -36,23 +37,56 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/whiteboard:view', $context);
 
+$theatre = optional_param('full', false, PARAM_BOOL);
+
 $PAGE->set_url('/mod/whiteboard/view.php', ['id' => $cm->id]);
 $PAGE->set_title($course->shortname . ': ' . format_string($whiteboard->name, true, ['context' => $context]));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($whiteboard);
 
+// In group mode, the board of the current group. "All participants" and users without a group see the board link.
+$groupmode = groups_get_activity_groupmode($cm);
+$groupid = $groupmode ? (int)groups_get_activity_group($cm, true) : 0;
+$link = group_boards::get_link($whiteboard, $groupid);
+
+// Only links of an enabled service are shown, so disabling a service hides its boards.
+$service = service::find($link);
+$embed = $service && $service->display == service::DISPLAY_EMBED;
+
+// Theatre mode shows nothing but the board, its name and buttons to open it in a new tab and to exit.
+$theatre = $theatre && $embed;
+if ($theatre) {
+    $PAGE->set_pagelayout('popup');
+    if (method_exists($PAGE, 'set_show_navigation_footer')) {
+        // Moodle 5.3 and later show the course navigation in a footer.
+        $PAGE->set_show_navigation_footer(false);
+    }
+}
+
 whiteboard_view($whiteboard, $course, $cm, $context);
 
 echo $OUTPUT->header();
 
-// Only links of an enabled service are shown, so disabling a service hides its boards.
-$service = service::find((string)$whiteboard->boardurl);
+if ($groupmode && !$theatre) {
+    echo groups_print_activity_menu($cm, $PAGE->url, true);
+}
+
 if ($service) {
     $plain = ['context' => $context, 'escape' => false];
+    $title = format_string($whiteboard->name, true, $plain);
+    if ($groupid) {
+        $title = get_string('boardofgroup', 'mod_whiteboard', (object)[
+            'name' => $title,
+            'group' => format_string(groups_get_group_name($groupid), true, $plain),
+        ]);
+    }
     echo $OUTPUT->render_from_template('mod_whiteboard/whiteboard', [
-        'embed' => $service->display == service::DISPLAY_EMBED,
-        'url' => service::board_url($service, $whiteboard->boardurl),
-        'title' => format_string($whiteboard->name, true, $plain),
+        'embed' => $embed,
+        'theatre' => $theatre,
+        'url' => service::board_url($service, $link),
+        'title' => $title,
+        'theatreurl' => (new moodle_url($PAGE->url, ['full' => 1]))->out(false),
+        'exiturl' => $PAGE->url->out(false),
         'newtabinfo' => get_string('newtabinfo', 'mod_whiteboard', format_string($service->name, true, $plain)),
         'allow' => service::IFRAME_ALLOW,
     ]);

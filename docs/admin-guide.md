@@ -127,8 +127,9 @@ with a data processing agreement, and disable the others.
 
 ## Backup and restore
 
-Whiteboards are backed up and restored with their name, description and board link, also when
-importing or duplicating them. The boards themselves stay in the whiteboard service and are not
+Whiteboards are backed up and restored with their name, description and board links, also when
+importing or duplicating them. The links of group boards are restored for the copies of the groups,
+when the groups are restored too. The boards themselves stay in the whiteboard service and are not
 backed up. Backups of version 1.0 are restored with the board link.
 
 ## Activities overview (Moodle 5)

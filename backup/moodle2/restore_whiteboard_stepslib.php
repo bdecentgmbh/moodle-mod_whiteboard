@@ -34,6 +34,7 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
 
         $paths = [];
         $paths[] = new restore_path_element('whiteboard', '/activity/whiteboard');
+        $paths[] = new restore_path_element('whiteboard_board', '/activity/whiteboard/boards/board');
 
         // Return the paths wrapped into standard activity structure.
         return $this->prepare_activity_structure($paths);
@@ -59,6 +60,22 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
         $newitemid = $DB->insert_record('whiteboard', $data);
         // Immediately after inserting "activity" record, call this.
         $this->apply_activity_instance($newitemid);
+    }
+
+    /**
+     * Restores the board of a group, if the group was restored.
+     *
+     * @param array $data
+     */
+    protected function process_whiteboard_board($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $data->whiteboard = $this->get_new_parentid('whiteboard');
+        $data->groupid = $this->get_mappingid('group', $data->groupid);
+        if ($data->groupid) {
+            $DB->insert_record('whiteboard_board', $data);
+        }
     }
 
     /**
