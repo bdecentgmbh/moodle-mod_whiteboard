@@ -15,41 +15,50 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Whiteboard module version information
+ * Shows a whiteboard.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
-require_once('lib.php');
-require_once($CFG->dirroot . '/mod/whiteboard/lib.php');
+use mod_whiteboard\service;
 
-$id = required_param('id', PARAM_INT);    // Course Module ID.
+require(__DIR__ . '/../../config.php');
+require_once(__DIR__ . '/lib.php');
 
-if (!$cm = get_coursemodule_from_id('whiteboard', $id)) {
-    throw new moodle_exception('invalidcoursemodule'); // NOTE this is invalid use of print_error, must be a lang string id.
-}
+$id = required_param('id', PARAM_INT); // Course module ID.
 
-$PAGE->set_url('/mod/whiteboard/view.php', ['id' => $cm->id]);
+[$course, $cm] = get_course_and_cm_from_cmid($id, 'whiteboard');
+$whiteboard = $DB->get_record('whiteboard', ['id' => $cm->instance], '*', MUST_EXIST);
 
-if (!$course = $DB->get_record('course', ['id' => $cm->course])) {
-    throw new moodle_exception('invalidcourse');  // NOTE As above.
-}
-require_course_login($course, false, $cm);
-if (!$whiteboard = $DB->get_record('whiteboard', ['id' => $cm->instance])) {
-    throw new moodle_exception('course module is incorrect'); // NOTE As above.
-}
+require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/whiteboard:view', $context);
-$PAGE->set_title($course->shortname . ': ' . $whiteboard->name);
+
+$PAGE->set_url('/mod/whiteboard/view.php', ['id' => $cm->id]);
+$PAGE->set_title($course->shortname . ': ' . format_string($whiteboard->name, true, ['context' => $context]));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($whiteboard);
 
-// Completion and trigger events.
 whiteboard_view($whiteboard, $course, $cm, $context);
 
 echo $OUTPUT->header();
-echo whiteboard_view_board($whiteboard);
+
+// Only links of an enabled service are shown, so disabling a service hides its boards.
+$service = service::find((string)$whiteboard->boardurl);
+if ($service) {
+    $plain = ['context' => $context, 'escape' => false];
+    echo $OUTPUT->render_from_template('mod_whiteboard/whiteboard', [
+        'embed' => $service->display == service::DISPLAY_EMBED,
+        'url' => service::board_url($service, $whiteboard->boardurl),
+        'title' => format_string($whiteboard->name, true, $plain),
+        'newtabinfo' => get_string('newtabinfo', 'mod_whiteboard', format_string($service->name, true, $plain)),
+        'allow' => service::IFRAME_ALLOW,
+    ]);
+} else {
+    $canedit = has_capability('moodle/course:manageactivities', $context);
+    echo $OUTPUT->notification(get_string($canedit ? 'unavailableedit' : 'unavailable', 'mod_whiteboard'), 'warning', false);
+}
+
 echo $OUTPUT->footer();

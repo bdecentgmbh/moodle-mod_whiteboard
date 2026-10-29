@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Whiteboard module admin settings and defaults
+ * Whiteboard settings: the whiteboard services that teachers can use.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
@@ -24,29 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-if ($ADMIN->fulltree) {
-    $settings->add(new admin_setting_configcheckbox(
-        'whiteboard/enable_miro',
-        get_string('enable_miro', 'mod_whiteboard'),
-        get_string('configenable_miro', 'mod_whiteboard'),
-        true
-    ));
-
-    $settings->add(new admin_setting_configcheckbox(
-        'whiteboard/enable_conceptboard',
-        get_string('enable_conceptboard', 'mod_whiteboard'),
-        get_string('configenable_conceptboard', 'mod_whiteboard'),
-        true
-    ));
-
-    // Default board.
-    $name = "whiteboard/defaultwhiteboard";
-    $title = get_string('defaultwhiteboard', 'mod_whiteboard');
-    $description = "";
-    $options = [
-        'miro' => get_string('strmiro', 'mod_whiteboard'),
-        'conceptboard' => get_string('strconceptboard', 'mod_whiteboard'),
-    ];
-    $setting = new admin_setting_configselect($name, $title, $description, 'miro', $options);
-    $settings->add($setting);
-}
+// The whiteboard has no other settings, so its settings page is the list of services.
+$settings = new admin_externalpage(
+    'modsettingwhiteboard',
+    get_string('pluginname', 'mod_whiteboard'),
+    new moodle_url('/mod/whiteboard/services.php'),
+    'moodle/site:config',
+    $module->is_enabled() === false
+);

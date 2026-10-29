@@ -37,8 +37,7 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
 
         // Define each element separated.
         $whiteboard = new backup_nested_element('whiteboard', ['id'], [
-            'name', 'intro', 'introformat', 'boardtype',
-            'boardid', 'timecreated', 'timemodified']);
+            'name', 'intro', 'introformat', 'boardurl', 'timecreated', 'timemodified']);
 
         // Build the tree.
 

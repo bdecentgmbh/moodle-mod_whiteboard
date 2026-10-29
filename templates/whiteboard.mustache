@@ -17,16 +17,34 @@
 {{!
     @template mod_whiteboard/whiteboard
 
-    Display the board into iframe.
+    The board of a whiteboard activity: in the page, or a button that opens it in a new tab.
+
+    Context variables required for this template:
+    * embed - Whether to show the board in the page
+    * url - Link to the board
+    * title - Name of the activity, as plain text
+    * newtabinfo - Where the board opens, as plain text, if it opens in a new tab
+    * allow - Features of the browser that the board may use
 
     Example context (json):
     {
-        "action": "https://example.com/"
+        "embed": true,
+        "url": "https://miro.com/app/board/uXjVPfdzxzc=/?autoplay=true",
+        "title": "Brainstorming",
+        "newtabinfo": "",
+        "allow": "fullscreen; clipboard-read; clipboard-write"
     }
-
 }}
-<div class="whiteboard-block ">
-	{{#url}}
-	<iframe width="100%" height="800" src="{{{url}}}" style="border: 1px solid #eee;"></iframe>
-	{{/url}}
+<div class="mod_whiteboard-board">
+    {{#embed}}
+    <iframe class="mod_whiteboard-frame" src="{{url}}" title="{{title}}" allow="{{allow}}" allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <p class="mod_whiteboard-newtab">
+        <a href="{{url}}" target="_blank" rel="noopener">{{#str}}openinnewtab, mod_whiteboard{{/str}} {{#pix}}i/externallink, core, {{#str}}opensinnewwindow, core{{/str}}{{/pix}}</a>
+    </p>
+    {{/embed}}
+    {{^embed}}
+    <p>{{newtabinfo}}</p>
+    <a class="btn btn-primary" href="{{url}}" target="_blank" rel="noopener">{{#str}}openboard, mod_whiteboard{{/str}} {{#pix}}i/externallink, core, {{#str}}opensinnewwindow, core{{/str}}{{/pix}}</a>
+    {{/embed}}
 </div>

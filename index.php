@@ -15,59 +15,54 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * List of whiteboard in course
+ * Lists the whiteboards of a course.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require('../../config.php');
+require(__DIR__ . '/../../config.php');
 
 $id = required_param('id', PARAM_INT); // Course id.
 
 $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
 
 require_course_login($course, true);
-$PAGE->set_pagelayout('incourse');
 
-$params = [
+$event = \mod_whiteboard\event\course_module_instance_list_viewed::create([
     'context' => context_course::instance($course->id),
-];
-$event = \mod_whiteboard\event\course_module_instance_list_viewed::create($params);
+]);
 $event->add_record_snapshot('course', $course);
 $event->trigger();
 
-$strwhiteboard      = get_string('modulename', 'whiteboard');
-$strwhiteboards     = get_string('modulenameplural', 'whiteboard');
-$strname      = get_string('name');
-$strintro     = get_string('moduleintro');
-$strlastmodified = get_string('lastmodified');
+// Moodle 5 lists the activities of a course on its activities overview page.
+if (class_exists(\core_courseformat\activityoverviewbase::class)) {
+    \core_courseformat\activityoverviewbase::redirect_to_overview_page($course->id, 'whiteboard');
+}
 
+$strwhiteboards = get_string('modulenameplural', 'mod_whiteboard');
+$PAGE->set_pagelayout('incourse');
 $PAGE->set_url('/mod/whiteboard/index.php', ['id' => $course->id]);
 $PAGE->set_title($course->shortname . ': ' . $strwhiteboards);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($strwhiteboards);
+
 echo $OUTPUT->header();
 echo $OUTPUT->heading($strwhiteboards);
 
 if (!$whiteboards = get_all_instances_in_course('whiteboard', $course)) {
-    notice(get_string('thereareno', 'moodle', $strwhiteboards), "$CFG->wwwroot/course/view.php?id=$course->id");
-    exit;
+    notice(get_string('thereareno', 'moodle', $strwhiteboards), new moodle_url('/course/view.php', ['id' => $course->id]));
 }
 
 $usesections = course_format_uses_sections($course->format);
 
 $table = new html_table();
 $table->attributes['class'] = 'generaltable mod_index';
-
 if ($usesections) {
-    $strsectionname = get_string('sectionname', 'format_' . $course->format);
-    $table->head  = [$strsectionname, $strname, $strintro];
-    $table->align = ['center', 'left', 'left'];
+    $table->head = [get_string('sectionname', 'format_' . $course->format), get_string('name'), get_string('moduleintro')];
 } else {
-    $table->head  = [$strlastmodified, $strname, $strintro];
-    $table->align = ['left', 'left', 'left'];
+    $table->head = [get_string('lastmodified'), get_string('name'), get_string('moduleintro')];
 }
 
 $modinfo = get_fast_modinfo($course);
@@ -86,23 +81,15 @@ foreach ($whiteboards as $whiteboard) {
             $currentsection = $whiteboard->section;
         }
     } else {
-        $printsection = '<span class="smallinfo">' . userdate($whiteboard->timemodified) . "</span>";
+        $printsection = html_writer::span(userdate($whiteboard->timemodified), 'smallinfo');
     }
-
-    $extra = empty($cm->extra) ? '' : $cm->extra;
-    $icon = '';
-    if (!empty($cm->icon)) {
-        // Each whiteboard has an icon in 2.0.
-        $icon = $OUTPUT->pix_icon($cm->icon, get_string('modulename', $cm->modname)) . ' ';
-    }
-
-    $class = $whiteboard->visible ? '' : 'class="dimmed"'; // Hidden modules are dimmed.
-    $table->data[] = [
-        $printsection,
-        "<a $class $extra href=\"view.php?id=$cm->id\">" . $icon . format_string($whiteboard->name) . "</a>",
-        format_module_intro('whiteboard', $whiteboard, $cm->id)];
+    $link = html_writer::link(
+        new moodle_url('/mod/whiteboard/view.php', ['id' => $cm->id]),
+        $cm->get_formatted_name(),
+        $whiteboard->visible ? [] : ['class' => 'dimmed']
+    );
+    $table->data[] = [$printsection, $link, format_module_intro('whiteboard', $whiteboard, $cm->id)];
 }
 
 echo html_writer::table($table);
-
 echo $OUTPUT->footer();

@@ -27,53 +27,42 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 require_once($CFG->dirroot . '/mod/whiteboard/lib.php');
 
+use mod_whiteboard\service;
+
 /**
  * Whiteboard module form.
  */
 class mod_whiteboard_mod_form extends moodleform_mod {
     /**
-     * Define the mform.
+     * Defines the form.
      */
     public function definition() {
-        global $CFG, $DB, $OUTPUT;
+        global $CFG, $OUTPUT;
 
-        $mform =& $this->_form;
+        $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
-        // Select the type.
-        $config = get_config('whiteboard');
         $mform->addElement('text', 'name', get_string('name'), ['size' => '48']);
-        if (!empty($CFG->formatstringstriptags)) {
-            $mform->setType('name', PARAM_TEXT);
-        } else {
-            $mform->setType('name', PARAM_CLEANHTML);
-        }
+        $mform->setType('name', empty($CFG->formatstringstriptags) ? PARAM_CLEANHTML : PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
-        $miro = isset($config->enable_miro) ? $config->enable_miro : '';
-        $conceptboard = isset($config->enable_conceptboard) ? $config->enable_conceptboard : '';
-        $type = [];
-        if ($miro) {
-            $type['miro'] = get_string('MIRO', 'whiteboard');
-        }
-        if ($conceptboard) {
-             $type['conceptboard'] = get_string('Conceptboard', 'whiteboard');
-        }
+        // A link or an embed code, which is reduced to its link when saved.
+        $mform->addElement('text', 'boardurl', get_string('boardurl', 'mod_whiteboard'), ['size' => '64']);
+        $mform->setType('boardurl', PARAM_RAW_TRIMMED);
+        $mform->addRule('boardurl', null, 'required', null, 'client');
+        $mform->addHelpButton('boardurl', 'boardurl', 'mod_whiteboard');
 
-        // Board ID.
-        $mform->addElement('text', 'boardid', get_string('whiteboardid', 'whiteboard'), ['size' => '48']);
-        $mform->setType('boardid', PARAM_TEXT);
-        $mform->addRule('boardid', null, 'required', null, 'client');
-
-        if (count($type) > 1) {
-            $mform->addElement('select', 'boardtype', get_string('boardtypename', 'whiteboard'), $type);
-            $mform->setDefault('boardtype', $config->defaultwhiteboard);
-        } else if (!empty($type)) {
-            $board = reset(array_keys($type));
-            $mform->addElement('hidden', 'boardtype', $board);
+        $names = $this->get_service_names();
+        if ($names) {
+            $mform->addElement('static', 'services', '', get_string('supportedservices', 'mod_whiteboard', $names));
         } else {
-            throw new moodle_exception('boardtypenotavailable');
+            $mform->addElement(
+                'static',
+                'services',
+                '',
+                $OUTPUT->notification(get_string('noservices', 'mod_whiteboard'), 'warning', false)
+            );
         }
 
         $this->standard_intro_elements();
@@ -81,5 +70,38 @@ class mod_whiteboard_mod_form extends moodleform_mod {
         $this->standard_coursemodule_elements();
 
         $this->add_action_buttons();
+    }
+
+    /**
+     * Checks that the board link belongs to an enabled service.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array Errors
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        $link = service::link_from_input($data['boardurl'] ?? '');
+        if (strlen($link) > service::MAX_LINK_LENGTH) {
+            $errors['boardurl'] = get_string('maximumchars', '', service::MAX_LINK_LENGTH);
+        } else if (!service::find($link)) {
+            $names = $this->get_service_names();
+            $errors['boardurl'] = $names ? get_string('unsupportedlink', 'mod_whiteboard', $names)
+                : get_string('noservices', 'mod_whiteboard');
+        }
+        return $errors;
+    }
+
+    /**
+     * Returns the names of the enabled services, for teachers.
+     *
+     * @return string Names separated by commas, empty if no service is enabled.
+     */
+    protected function get_service_names(): string {
+        $names = array_map(
+            fn($service) => format_string($service->name, true, ['context' => context_system::instance()]),
+            service::get_enabled()
+        );
+        return implode(', ', $names);
     }
 }

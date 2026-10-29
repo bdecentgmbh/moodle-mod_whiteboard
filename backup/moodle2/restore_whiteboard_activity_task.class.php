@@ -52,7 +52,7 @@ class restore_whiteboard_activity_task extends restore_activity_task {
     public static function define_decode_contents() {
         $contents = [];
 
-        $contents[] = new restore_decode_content('whiteboard', ['intro', 'boardtype', 'boardid'], 'whiteboard');
+        $contents[] = new restore_decode_content('whiteboard', ['intro'], 'whiteboard');
 
         return $contents;
     }

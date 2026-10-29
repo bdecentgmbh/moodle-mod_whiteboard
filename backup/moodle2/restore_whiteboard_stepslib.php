@@ -47,11 +47,13 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
         global $DB;
 
         $data = (object)$data;
-        $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-        // See MDL-9367.
+        // Backups of version 1.0 have a board type and ID instead of the link.
+        if (!isset($data->boardurl)) {
+            $data->boardurl = \mod_whiteboard\service::legacy_board_url($data->boardtype ?? null, $data->boardid ?? null);
+        }
+        unset($data->boardtype, $data->boardid);
 
         // Insert the whiteboard record.
         $newitemid = $DB->insert_record('whiteboard', $data);
