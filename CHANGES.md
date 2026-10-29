@@ -14,9 +14,11 @@
 - Miro boards are shown right away, without a preview that has to be clicked first.
 - Conceptboard boards open in a new tab: Conceptboard does not allow other websites to show its
   boards (#1).
-- Group mode: each group can have a board of its own, set under *Group boards* in the activity
-  settings. Students see the board of their group; teachers switch between the groups with
-  Moodle's group selector.
+- Groups and single students can have boards of their own, which teachers add on the new *Boards*
+  page of the whiteboard (capability `mod/whiteboard:manageboards`). In group mode, students see
+  the board of their group and teachers switch between the groups with Moodle's group selector. A
+  user board replaces the board of the group and of the whiteboard for its student. User boards are
+  backed up with user data, deleted by the course reset, and covered by the privacy API.
 - Theatre mode shows nothing but the board, its name and buttons to open it in a new tab and to
   exit.
 - Boards shown in the page have a link to open them in a new tab, a title for screen readers and the

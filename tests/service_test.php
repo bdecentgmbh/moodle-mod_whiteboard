@@ -197,12 +197,18 @@ final class service_test extends \advanced_testcase {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_whiteboard');
         $group = $generator->create_group(['courseid' => $course->id]);
+        $user = $generator->create_user();
         $generator->create_module('whiteboard', ['course' => $course->id]);
-        $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://miro.com/app/live-embed/a=/',
-            'groupboard' => [$group->id => 'https://miro.com/app/board/b=/']]);
-        $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://example.org/board/a',
-            'groupboard' => [$group->id => 'https://web.collaboard.app/share/c']]);
+        $whiteboard = $generator->create_module('whiteboard', ['course' => $course->id,
+            'boardurl' => 'https://miro.com/app/live-embed/a=/']);
+        $plugingenerator->create_board(['whiteboardid' => $whiteboard->id, 'groupid' => $group->id,
+            'boardurl' => 'https://miro.com/app/board/b=/']);
+        $whiteboard = $generator->create_module('whiteboard', ['course' => $course->id,
+            'boardurl' => 'https://example.org/board/a']);
+        $plugingenerator->create_board(['whiteboardid' => $whiteboard->id, 'userid' => $user->id,
+            'boardurl' => 'https://web.collaboard.app/share/c']);
         $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://www.taskcards.de/#/board/a']);
         $generator->create_module('whiteboard', ['course' => $course->id, 'boardurl' => 'https://example.org/board/a']);
 

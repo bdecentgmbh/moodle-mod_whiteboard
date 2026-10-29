@@ -11,6 +11,7 @@ has added to the course. You open it like any other activity.
   websites to show them.
 - If you work in groups, you see the board of your group. Sometimes you can also look at the boards
   of the other groups by choosing a group above the board.
+- Your teacher can also give you a board of your own, which you then see instead.
 - Depending on the service and on how your teacher shared the board, you may have to sign in to the
   service, or you may only be able to look at the board. Your teacher tells you if you need an
   account.

@@ -42,23 +42,32 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
-     * Backs up a course for import.
+     * Backs up a course for import, or with user data.
      *
      * @param int $courseid
+     * @param bool $userdata Whether to back up the users and their data.
      * @return string The backup id: its files are in the backup temp directory of that name.
      */
-    protected function backup(int $courseid): string {
+    protected function backup(int $courseid, bool $userdata = false): string {
         global $USER;
         $bc = new \backup_controller(
             \backup::TYPE_1COURSE,
             $courseid,
             \backup::FORMAT_MOODLE,
             \backup::INTERACTIVE_NO,
-            \backup::MODE_IMPORT,
+            $userdata ? \backup::MODE_GENERAL : \backup::MODE_IMPORT,
             $USER->id
         );
         $backupid = $bc->get_backupid();
+        if ($userdata) {
+            $bc->get_plan()->get_setting('users')->set_value(true);
+        }
         $bc->execute_plan();
+        if ($userdata) {
+            $file = $bc->get_results()['backup_destination'];
+            $file->extract_to_pathname(get_file_packer('application/vnd.moodle.backup'), make_backup_temp_directory($backupid));
+            $file->delete();
+        }
         $bc->destroy();
         return $backupid;
     }
@@ -68,16 +77,17 @@ final class backup_restore_test extends \advanced_testcase {
      *
      * @param string $backupid
      * @param int $categoryid
+     * @param bool $userdata Whether the backup has user data.
      * @return int The id of the new course.
      */
-    protected function restore(string $backupid, int $categoryid): int {
+    protected function restore(string $backupid, int $categoryid, bool $userdata = false): int {
         global $USER;
         $courseid = \restore_dbops::create_new_course('Copy', 'copy', $categoryid);
         $rc = new \restore_controller(
             $backupid,
             $courseid,
             \backup::INTERACTIVE_NO,
-            \backup::MODE_IMPORT,
+            $userdata ? \backup::MODE_GENERAL : \backup::MODE_IMPORT,
             $USER->id,
             \backup::TARGET_NEW_COURSE
         );
@@ -112,42 +122,70 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
-     * A copied course has the boards of the groups, for the copies of the groups.
+     * Creates a course with a group and a student, and a whiteboard with a board for each of them.
+     *
+     * @return array The course, group, student and whiteboard.
+     */
+    protected function create_course_with_boards(): array {
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $group = $generator->create_group(['courseid' => $course->id, 'name' => 'Team A']);
+        $student = $generator->create_and_enrol($course, 'student');
+        $whiteboard = $generator->create_module('whiteboard', ['course' => $course->id, 'groupmode' => SEPARATEGROUPS]);
+        $plugingenerator = $generator->get_plugin_generator('mod_whiteboard');
+        $plugingenerator->create_board([
+            'whiteboardid' => $whiteboard->id,
+            'groupid' => $group->id,
+            'boardurl' => 'https://www.taskcards.de/#/board/a',
+        ]);
+        $plugingenerator->create_board([
+            'whiteboardid' => $whiteboard->id,
+            'userid' => $student->id,
+            'boardurl' => 'https://www.taskcards.de/#/board/u',
+        ]);
+        return [$course, $group, $student, $whiteboard];
+    }
+
+    /**
+     * A copied course has the boards of the groups, for the copies of the groups, but not the boards of users.
      */
     public function test_backup_restore_group_boards(): void {
         global $DB;
         $this->resetAfterTest();
         $this->setAdminUser();
-
-        $course = $this->getDataGenerator()->create_course();
-        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id, 'name' => 'Team A']);
-        $this->getDataGenerator()->create_module('whiteboard', [
-            'course' => $course->id,
-            'groupmode' => SEPARATEGROUPS,
-            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
-        ]);
+        [$course] = $this->create_course_with_boards();
 
         $newcourseid = $this->restore($this->backup($course->id), $course->category);
 
         $restored = $DB->get_record('whiteboard', ['course' => $newcourseid], '*', MUST_EXIST);
         $newgroup = $DB->get_record('groups', ['courseid' => $newcourseid, 'name' => 'Team A'], '*', MUST_EXIST);
-        $this->assertSame([$newgroup->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($restored->id));
+        $this->assertSame([$newgroup->id => 'https://www.taskcards.de/#/board/a'], boards::get_links($restored->id, boards::GROUP));
+        $this->assertSame([], boards::get_links($restored->id, boards::USER));
     }
 
     /**
-     * A duplicated whiteboard has the boards of the same groups.
+     * A course restored with user data has the boards of the users too.
+     */
+    public function test_backup_restore_user_boards(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        [$course, , $student] = $this->create_course_with_boards();
+
+        $newcourseid = $this->restore($this->backup($course->id, true), $course->category, true);
+
+        $restored = $DB->get_record('whiteboard', ['course' => $newcourseid], '*', MUST_EXIST);
+        $this->assertSame([$student->id => 'https://www.taskcards.de/#/board/u'], boards::get_links($restored->id, boards::USER));
+        $this->assertCount(1, boards::get_links($restored->id, boards::GROUP));
+    }
+
+    /**
+     * A duplicated whiteboard has the boards of the same groups, and no boards of users.
      */
     public function test_duplicate_group_boards(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
-
-        $course = $this->getDataGenerator()->create_course();
-        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
-            'course' => $course->id,
-            'groupmode' => SEPARATEGROUPS,
-            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
-        ]);
+        [$course, $group, , $whiteboard] = $this->create_course_with_boards();
 
         if (method_exists(\core_courseformat\local\cmactions::class, 'duplicate')) {
             // Moodle 5.2 and later.
@@ -156,7 +194,8 @@ final class backup_restore_test extends \advanced_testcase {
             $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($whiteboard->cmid));
         }
 
-        $this->assertSame([$group->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($newcm->instance));
+        $this->assertSame([$group->id => 'https://www.taskcards.de/#/board/a'], boards::get_links($newcm->instance, boards::GROUP));
+        $this->assertSame([], boards::get_links($newcm->instance, boards::USER));
     }
 
     /**

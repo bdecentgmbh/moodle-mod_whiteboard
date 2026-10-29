@@ -27,6 +27,10 @@ defined('MOODLE_INTERNAL') || die();
 $observers = [
     [
         'eventname' => '\core\event\group_deleted',
-        'callback' => '\mod_whiteboard\group_boards::group_deleted',
+        'callback' => '\mod_whiteboard\boards::group_deleted',
+    ],
+    [
+        'eventname' => '\core\event\user_deleted',
+        'callback' => '\mod_whiteboard\boards::user_deleted',
     ],
 ];

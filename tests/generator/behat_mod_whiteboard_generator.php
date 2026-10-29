@@ -24,7 +24,8 @@
  */
 class behat_mod_whiteboard_generator extends behat_generator_base {
     /**
-     * Lists the entities that Behat can create: "the following "mod_whiteboard > services" exist".
+     * Lists the entities that Behat can create: "the following "mod_whiteboard > services" exist", and boards of
+     * groups (by idnumber) or users (by username) of a whiteboard (by name).
      *
      * @return array
      */
@@ -35,6 +36,23 @@ class behat_mod_whiteboard_generator extends behat_generator_base {
                 'datagenerator' => 'service',
                 'required' => ['name', 'links'],
             ],
+            'boards' => [
+                'singular' => 'board',
+                'datagenerator' => 'board',
+                'required' => ['whiteboard', 'boardurl'],
+                'switchids' => ['whiteboard' => 'whiteboardid', 'group' => 'groupid', 'user' => 'userid'],
+            ],
         ];
+    }
+
+    /**
+     * Returns the id of a whiteboard.
+     *
+     * @param string $name The name of the whiteboard.
+     * @return int
+     */
+    protected function get_whiteboard_id(string $name): int {
+        global $DB;
+        return $DB->get_field('whiteboard', 'id', ['name' => $name], MUST_EXIST);
     }
 }

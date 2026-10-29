@@ -52,4 +52,23 @@ class mod_whiteboard_generator extends testing_module_generator {
         $record->params = $record->params ?? '';
         return \mod_whiteboard\service::get(\mod_whiteboard\service::save($record));
     }
+
+    /**
+     * Creates the board of a group or user.
+     *
+     * @param array|stdClass $record whiteboardid, groupid or userid, and boardurl (a link or an embed code)
+     * @return stdClass
+     */
+    public function create_board($record): stdClass {
+        global $DB;
+        $record = (array)$record;
+        $type = empty($record['userid']) ? \mod_whiteboard\boards::GROUP : \mod_whiteboard\boards::USER;
+        $id = \mod_whiteboard\boards::save(
+            $record['whiteboardid'],
+            $type,
+            (int)($record['userid'] ?? $record['groupid']),
+            $record['boardurl']
+        );
+        return $DB->get_record('whiteboard_board', ['id' => $id]);
+    }
 }

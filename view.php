@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use mod_whiteboard\group_boards;
+use mod_whiteboard\boards;
 use mod_whiteboard\service;
 
 require(__DIR__ . '/../../config.php');
@@ -44,10 +44,13 @@ $PAGE->set_title($course->shortname . ': ' . format_string($whiteboard->name, tr
 $PAGE->set_heading($course->fullname);
 $PAGE->set_activity_record($whiteboard);
 
-// In group mode, the board of the current group. "All participants" and users without a group see the board link.
-$groupmode = groups_get_activity_groupmode($cm);
+// A board of the user's own comes first. Then, in group mode, the board of the current group; "All participants" and
+// groups without a board see the board link of the whiteboard.
+$userlink = boards::get_link($whiteboard->id, boards::USER, $USER->id);
+$groupmode = $userlink === null ? groups_get_activity_groupmode($cm) : NOGROUPS;
 $groupid = $groupmode ? (int)groups_get_activity_group($cm, true) : 0;
-$link = group_boards::get_link($whiteboard, $groupid);
+$grouplink = boards::get_link($whiteboard->id, boards::GROUP, $groupid);
+$link = $userlink ?? $grouplink ?? (string)$whiteboard->boardurl;
 
 // Only links of an enabled service are shown, so disabling a service hides its boards.
 $service = service::find($link);
@@ -74,7 +77,7 @@ if ($groupmode && !$theatre) {
 if ($service) {
     $plain = ['context' => $context, 'escape' => false];
     $title = format_string($whiteboard->name, true, $plain);
-    if ($groupid) {
+    if ($grouplink !== null) {
         $title = get_string('boardofgroup', 'mod_whiteboard', (object)[
             'name' => $title,
             'group' => format_string(groups_get_group_name($groupid), true, $plain),

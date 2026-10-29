@@ -22,6 +22,7 @@ namespace mod_whiteboard;
 #[\PHPUnit\Framework\Attributes\CoversFunction('whiteboard_delete_instance')]
 #[\PHPUnit\Framework\Attributes\CoversFunction('whiteboard_get_coursemodule_info')]
 #[\PHPUnit\Framework\Attributes\CoversFunction('whiteboard_view')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('whiteboard_reset_userdata')]
 /**
  * Tests for the functions in lib.php.
  *
@@ -34,6 +35,7 @@ namespace mod_whiteboard;
  * @covers ::whiteboard_delete_instance
  * @covers ::whiteboard_get_coursemodule_info
  * @covers ::whiteboard_view
+ * @covers ::whiteboard_reset_userdata
  */
 final class lib_test extends \advanced_testcase {
     #[\Override]
@@ -89,46 +91,48 @@ final class lib_test extends \advanced_testcase {
     }
 
     /**
-     * The boards of groups are saved with the whiteboard, as links.
+     * Resetting a course deletes the boards of users, if asked to, and keeps the boards of groups.
      */
-    public function test_add_update_instance_group_boards(): void {
+    public function test_reset_userdata(): void {
         $this->resetAfterTest();
-        $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
-        $groupa = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        $groupb = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
-            'course' => $course->id,
-            'groupmode' => SEPARATEGROUPS,
-            'groupboard' => [
-                $groupa->id => '<iframe src="https://www.taskcards.de/#/board/a"></iframe>',
-                $groupb->id => '',
-            ],
+        $group = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
+        $user = $this->getDataGenerator()->create_user();
+        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', ['course' => $course->id]);
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_whiteboard');
+        $generator->create_board([
+            'whiteboardid' => $whiteboard->id,
+            'groupid' => $group->id,
+            'boardurl' => 'https://miro.com/app/board/g=/',
         ]);
-        $this->assertSame([$groupa->id => 'https://www.taskcards.de/#/board/a'], group_boards::get($whiteboard->id));
+        $generator->create_board([
+            'whiteboardid' => $whiteboard->id,
+            'userid' => $user->id,
+            'boardurl' => 'https://miro.com/app/board/u=/',
+        ]);
 
-        $cm = get_coursemodule_from_id('whiteboard', $whiteboard->cmid);
-        whiteboard_update_instance((object)[
-            'instance' => $whiteboard->id,
-            'coursemodule' => $cm->id,
-            'name' => 'Ideas',
-            'boardurl' => 'https://miro.com/app/board/x=/',
-            'groupboard' => [$groupa->id => ' ', $groupb->id => 'https://www.taskcards.de/#/board/b'],
-        ]);
-        $this->assertSame([$groupb->id => 'https://www.taskcards.de/#/board/b'], group_boards::get($whiteboard->id));
+        $this->assertSame([], whiteboard_reset_userdata((object)['courseid' => $course->id, 'reset_whiteboard_userboards' => 0]));
+        $this->assertCount(1, boards::get_links($whiteboard->id, boards::USER));
+
+        $status = whiteboard_reset_userdata((object)['courseid' => $course->id, 'reset_whiteboard_userboards' => 1]);
+        $this->assertFalse($status[0]['error']);
+        $this->assertSame([], boards::get_links($whiteboard->id, boards::USER));
+        $this->assertCount(1, boards::get_links($whiteboard->id, boards::GROUP));
     }
 
     /**
-     * Deleting removes the whiteboard and the boards of its groups.
+     * Deleting removes the whiteboard and the boards of its groups and users.
      */
     public function test_delete_instance(): void {
         global $DB;
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $group = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', [
-            'course' => $course->id,
-            'groupboard' => [$group->id => 'https://www.taskcards.de/#/board/a'],
+        $whiteboard = $this->getDataGenerator()->create_module('whiteboard', ['course' => $course->id]);
+        $this->getDataGenerator()->get_plugin_generator('mod_whiteboard')->create_board([
+            'whiteboardid' => $whiteboard->id,
+            'groupid' => $group->id,
+            'boardurl' => 'https://www.taskcards.de/#/board/a',
         ]);
         $this->assertTrue(whiteboard_delete_instance($whiteboard->id));
         $this->assertFalse($DB->record_exists('whiteboard', ['id' => $whiteboard->id]));

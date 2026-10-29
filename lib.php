@@ -35,7 +35,6 @@ function whiteboard_add_instance($whiteboard, $mform = null) {
     $whiteboard->timecreated = time();
     $whiteboard->timemodified = $whiteboard->timecreated;
     $whiteboard->id = $DB->insert_record('whiteboard', $whiteboard);
-    \mod_whiteboard\group_boards::save($whiteboard->id, (array)($whiteboard->groupboard ?? []));
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
     \core_completion\api::update_completion_date_event(
         $whiteboard->coursemodule,
@@ -59,7 +58,6 @@ function whiteboard_update_instance($whiteboard, $mform = null) {
     $whiteboard->boardurl = \mod_whiteboard\service::link_from_input($whiteboard->boardurl ?? '');
     $whiteboard->timemodified = time();
     $DB->update_record('whiteboard', $whiteboard);
-    \mod_whiteboard\group_boards::save($whiteboard->id, (array)($whiteboard->groupboard ?? []));
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
     \core_completion\api::update_completion_date_event(
         $whiteboard->coursemodule,
@@ -85,7 +83,7 @@ function whiteboard_delete_instance($id) {
     if ($cm = get_coursemodule_from_instance('whiteboard', $id)) {
         \core_completion\api::update_completion_date_event($cm->id, 'whiteboard', $id, null);
     }
-    \mod_whiteboard\group_boards::delete_for_whiteboard($whiteboard->id);
+    \mod_whiteboard\boards::delete_for_whiteboard($whiteboard->id);
     $DB->delete_records('whiteboard', ['id' => $whiteboard->id]);
     return true;
 }
@@ -167,13 +165,44 @@ function mod_whiteboard_core_calendar_provide_event_action($event, $factory, $us
 }
 
 /**
- * Resets the whiteboards of a course. The boards are kept by the whiteboard service, so there is nothing to reset.
+ * Adds the option to delete the boards of users to the course reset form.
+ *
+ * @param MoodleQuickForm $mform
+ */
+function whiteboard_reset_course_form_definition(&$mform) {
+    $mform->addElement('header', 'whiteboardheader', get_string('modulenameplural', 'mod_whiteboard'));
+    $mform->addElement('advcheckbox', 'reset_whiteboard_userboards', get_string('resetuserboards', 'mod_whiteboard'));
+}
+
+/**
+ * Returns the defaults of the course reset form.
+ *
+ * @param stdClass $course
+ * @return array
+ */
+function whiteboard_reset_course_form_defaults($course) {
+    return ['reset_whiteboard_userboards' => 1];
+}
+
+/**
+ * Resets the whiteboards of a course: deletes the boards of users if asked to. The boards themselves, and what users
+ * did on them, are kept by the whiteboard service.
  *
  * @param stdClass $data The data submitted from the reset course form.
  * @return array Status array
  */
 function whiteboard_reset_userdata($data) {
-    return [];
+    global $DB;
+    if (empty($data->reset_whiteboard_userboards)) {
+        return [];
+    }
+    $whiteboardids = $DB->get_fieldset_select('whiteboard', 'id', 'course = ?', [$data->courseid]);
+    \mod_whiteboard\boards::delete_user_boards($whiteboardids);
+    return [[
+        'component' => get_string('modulenameplural', 'mod_whiteboard'),
+        'item' => get_string('userboardsdeleted', 'mod_whiteboard'),
+        'error' => false,
+    ]];
 }
 
 /**
@@ -192,6 +221,31 @@ function whiteboard_get_view_actions() {
  */
 function whiteboard_get_post_actions() {
     return ['update', 'add'];
+}
+
+/**
+ * Adds the "Boards" page of the boards of groups and users to the navigation of the whiteboard.
+ *
+ * @param settings_navigation $settings
+ * @param navigation_node $whiteboardnode
+ */
+function whiteboard_extend_settings_navigation(settings_navigation $settings, navigation_node $whiteboardnode) {
+    $cm = $settings->get_page()->cm;
+    if (!$cm || !has_capability('mod/whiteboard:manageboards', $cm->context)) {
+        return;
+    }
+    // Right after the settings of the whiteboard. A key of its own keeps it out of the "More" menu.
+    $keys = $whiteboardnode->get_children_key_list();
+    $i = array_search('modedit', $keys);
+    $beforekey = $i === false ? ($keys[0] ?? null) : ($keys[$i + 1] ?? null);
+    $node = navigation_node::create(
+        get_string('boards', 'mod_whiteboard'),
+        new moodle_url('/mod/whiteboard/boards.php', ['id' => $cm->id]),
+        navigation_node::TYPE_SETTING,
+        null,
+        'mod_whiteboard_boards'
+    );
+    $whiteboardnode->add_node($node, $beforekey);
 }
 
 /**

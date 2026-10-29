@@ -163,6 +163,51 @@ class service {
     }
 
     /**
+     * Returns the names of the enabled services, for teachers.
+     *
+     * @return string Names separated by commas, empty if no service is enabled.
+     */
+    public static function get_enabled_names(): string {
+        $names = array_map(
+            fn($service) => format_string($service->name, true, ['context' => \context_system::instance()]),
+            self::get_enabled()
+        );
+        return implode(', ', $names);
+    }
+
+    /**
+     * Returns the information for teachers below the field of a board link: the services they can use.
+     *
+     * @return string HTML
+     */
+    public static function get_supported_info(): string {
+        global $OUTPUT;
+        $names = self::get_enabled_names();
+        if (!$names) {
+            return $OUTPUT->notification(get_string('noservices', 'mod_whiteboard'), 'warning', false);
+        }
+        return get_string('supportedservices', 'mod_whiteboard', $names);
+    }
+
+    /**
+     * Checks that what a teacher entered, a link or an embed code, is a board of an enabled service.
+     *
+     * @param string $input
+     * @return string|null The error, null if the link is fine.
+     */
+    public static function check_input(string $input): ?string {
+        $link = self::link_from_input($input);
+        if (strlen($link) > self::MAX_LINK_LENGTH) {
+            return get_string('maximumchars', '', self::MAX_LINK_LENGTH);
+        }
+        if (!self::find($link)) {
+            $names = self::get_enabled_names();
+            return $names ? get_string('unsupportedlink', 'mod_whiteboard', $names) : get_string('noservices', 'mod_whiteboard');
+        }
+        return null;
+    }
+
+    /**
      * Whether a board link starts with one of the links of a service.
      *
      * @param stdClass $service
@@ -352,7 +397,7 @@ class service {
     }
 
     /**
-     * Counts the activities of each service: activities whose board, or the board of one of their groups, it has.
+     * Counts the activities of each service: activities whose board, or the board of one of their groups or users, it has.
      *
      * @param stdClass[] $services
      * @return int[] Number of activities by service id.

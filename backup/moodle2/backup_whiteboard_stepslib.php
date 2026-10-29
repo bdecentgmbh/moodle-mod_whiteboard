@@ -33,13 +33,14 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
      */
     protected function define_structure() {
 
-        // The whiteboard module stores no user info.
+        // The boards of users are user info.
+        $userinfo = $this->get_setting_value('userinfo');
 
         // Define each element separated.
         $whiteboard = new backup_nested_element('whiteboard', ['id'], [
             'name', 'intro', 'introformat', 'boardurl', 'timecreated', 'timemodified']);
         $boards = new backup_nested_element('boards');
-        $board = new backup_nested_element('board', ['id'], ['groupid', 'boardurl', 'timemodified']);
+        $board = new backup_nested_element('board', ['id'], ['groupid', 'userid', 'boardurl', 'timemodified']);
 
         // Build the tree.
         $whiteboard->add_child($boards);
@@ -47,10 +48,15 @@ class backup_whiteboard_activity_structure_step extends backup_activity_structur
 
         // Define sources.
         $whiteboard->set_source_table('whiteboard', ['id' => backup::VAR_ACTIVITYID]);
-        $board->set_source_table('whiteboard_board', ['whiteboard' => backup::VAR_PARENTID]);
+        if ($userinfo) {
+            $board->set_source_table('whiteboard_board', ['whiteboard' => backup::VAR_PARENTID]);
+        } else {
+            $board->set_source_sql('SELECT * FROM {whiteboard_board} WHERE whiteboard = ? AND userid = 0', [backup::VAR_PARENTID]);
+        }
 
         // Define id annotations.
         $board->annotate_ids('group', 'groupid');
+        $board->annotate_ids('user', 'userid');
 
         // Define file annotations.
         $whiteboard->annotate_files('mod_whiteboard', 'intro', null); // This file area hasn't itemid.

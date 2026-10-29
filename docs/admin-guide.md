@@ -115,22 +115,29 @@ without being signed in to the service.
 |---|---|---|
 | `mod/whiteboard:addinstance` | Editing teacher, Manager | Adding a whiteboard to a course |
 | `mod/whiteboard:view` | Guest, Authenticated user | Viewing a whiteboard |
+| `mod/whiteboard:manageboards` | Editing teacher, Manager | Adding boards for groups and users on the *Boards* page of a whiteboard. Without *Access all groups* (`moodle/site:accessallgroups`), only for their own groups and the users in them, when the whiteboard is in separate groups |
 
 Managing the services needs `moodle/site:config`.
 
 ## Privacy
 
-The whiteboard stores no personal data in Moodle. When users open a board, their browser connects to
-the whiteboard service directly, which receives at least their IP address and may set cookies or ask
-them to sign in. Choose services that your organisation's data protection rules allow, for example
-with a data processing agreement, and disable the others.
+The only personal data the whiteboard stores in Moodle are the boards that teachers give to single
+users (user boards): which user has which board link. They are included in data exports and deleted
+with the privacy API, when the user is deleted, and when the course is reset with *Delete user
+boards*.
+
+When users open a board, their browser connects to the whiteboard service directly, which receives
+at least their IP address and may set cookies or ask them to sign in. Everything users add to a
+board is kept by the service, not by Moodle. Choose services that your organisation's data
+protection rules allow, for example with a data processing agreement, and disable the others.
 
 ## Backup and restore
 
 Whiteboards are backed up and restored with their name, description and board links, also when
-importing or duplicating them. The links of group boards are restored for the copies of the groups,
-when the groups are restored too. The boards themselves stay in the whiteboard service and are not
-backed up. Backups of version 1.0 are restored with the board link.
+importing or duplicating them. Group boards are restored for the copies of the groups, when the
+groups are restored too. User boards are user data: they are only backed up and restored with
+users. The boards themselves stay in the whiteboard service and are not backed up. Backups of
+version 1.0 are restored with the board link.
 
 ## Activities overview (Moodle 5)
 

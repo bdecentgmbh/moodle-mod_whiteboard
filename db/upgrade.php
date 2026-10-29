@@ -102,17 +102,19 @@ function xmldb_whiteboard_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026102900) {
-        // In group mode, each group can have a board of its own.
+        // Groups and users can have a board of their own.
         $table = new xmldb_table('whiteboard_board');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('whiteboard', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('groupid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('groupid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('boardurl', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null);
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
         $table->add_key('whiteboard', XMLDB_KEY_FOREIGN, ['whiteboard'], 'whiteboard', ['id']);
         $table->add_key('groupid', XMLDB_KEY_FOREIGN, ['groupid'], 'groups', ['id']);
-        $table->add_index('whiteboardgroup', XMLDB_INDEX_UNIQUE, ['whiteboard', 'groupid']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_index('whiteboardgroupuser', XMLDB_INDEX_UNIQUE, ['whiteboard', 'groupid', 'userid']);
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
