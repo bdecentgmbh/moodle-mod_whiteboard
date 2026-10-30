@@ -171,7 +171,7 @@ class boards {
      *
      * @param cm_info $cm
      * @param string $type self::GROUP or self::USER
-     * @return string[] Names by group or user id.
+     * @return string[] Names by group or user id, for HTML.
      */
     public static function get_choices(cm_info $cm, string $type): array {
         $choices = [];
@@ -182,7 +182,7 @@ class boards {
         } else {
             $showemail = in_array('email', \core_user\fields::get_identity_fields($cm->context, false));
             foreach (self::get_users($cm) as $user) {
-                $choices[$user->id] = $showemail ? fullname($user) . ', ' . $user->email : fullname($user);
+                $choices[$user->id] = $showemail ? s(fullname($user) . ', ' . $user->email) : s(fullname($user));
             }
         }
         return array_diff_key($choices, self::get_links($cm->instance, $type));
