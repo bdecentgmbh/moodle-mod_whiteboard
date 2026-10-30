@@ -17,16 +17,54 @@
 {{!
     @template mod_whiteboard/whiteboard
 
-    Display the board into iframe.
+    The board of a whiteboard activity: in the page, in theatre mode, or a button that opens it in a new tab.
+
+    Context variables required for this template:
+    * embed - Whether to show the board in the page
+    * theatre - Whether the page is in theatre mode: nothing but the board, its name and buttons
+    * url - Link to the board
+    * title - Name of the activity, and of the group in group mode, as plain text
+    * theatreurl - Link to theatre mode
+    * exiturl - Link back from theatre mode
+    * newtabinfo - Where the board opens, as plain text, if it opens in a new tab
+    * allow - Features of the browser that the board may use
 
     Example context (json):
     {
-        "action": "https://example.com/"
+        "embed": true,
+        "theatre": false,
+        "url": "https://miro.com/app/board/uXjVPfdzxzc=/?autoplay=true",
+        "title": "Brainstorming (Group A)",
+        "theatreurl": "https://example.com/mod/whiteboard/view.php?id=1&full=1",
+        "exiturl": "https://example.com/mod/whiteboard/view.php?id=1",
+        "newtabinfo": "",
+        "allow": "fullscreen; clipboard-read; clipboard-write"
     }
-
 }}
-<div class="whiteboard-block ">
-	{{#url}}
-	<iframe width="100%" height="800" src="{{{url}}}" style="border: 1px solid #eee;"></iframe>
-	{{/url}}
+<div class="mod_whiteboard-board{{#theatre}} mod_whiteboard-theatre{{/theatre}}">
+    {{#embed}}
+    {{#theatre}}
+    <div class="mod_whiteboard-theatre-bar d-flex align-items-center">
+        <h1 class="mod_whiteboard-theatre-title h5 mb-0 flex-grow-1 text-truncate">{{title}}</h1>
+        <a class="btn btn-icon flex-shrink-0" href="{{url}}" target="_blank" rel="noopener"
+            title="{{#str}}openinnewtab, mod_whiteboard{{/str}}" aria-label="{{#str}}openinnewtab, mod_whiteboard{{/str}}"
+        >{{#pix}}i/externallink, core{{/pix}}</a>
+        <a class="btn btn-icon flex-shrink-0" href="{{exiturl}}"
+            title="{{#str}}exittheatremode, mod_whiteboard{{/str}}" aria-label="{{#str}}exittheatremode, mod_whiteboard{{/str}}"
+        >{{#pix}}e/cancel, core{{/pix}}</a>
+    </div>
+    {{/theatre}}
+    {{^theatre}}
+    <div class="mod_whiteboard-actions">
+        <a class="btn btn-secondary" href="{{theatreurl}}">{{#pix}}e/fullscreen, core{{/pix}}{{#str}}theatremode, mod_whiteboard{{/str}}</a>
+        <a class="btn btn-secondary" href="{{url}}" target="_blank" rel="noopener">{{#pix}}i/externallink, core{{/pix}}{{#str}}openinnewtab, mod_whiteboard{{/str}}</a>
+    </div>
+    {{/theatre}}
+    <iframe class="mod_whiteboard-frame" src="{{url}}" title="{{title}}" allow="{{allow}}" allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    {{/embed}}
+    {{^embed}}
+    <p>{{newtabinfo}}</p>
+    <a class="btn btn-primary" href="{{url}}" target="_blank" rel="noopener">{{#pix}}i/externallink, core{{/pix}}{{#str}}openboard, mod_whiteboard{{/str}}</a>
+    {{/embed}}
 </div>

@@ -27,14 +27,14 @@
  * Structure step to restore one whiteboard activity
  */
 class restore_whiteboard_activity_structure_step extends restore_activity_structure_step {
-
     /**
      * Define structure.
      */
     protected function define_structure() {
 
-        $paths = array();
+        $paths = [];
         $paths[] = new restore_path_element('whiteboard', '/activity/whiteboard');
+        $paths[] = new restore_path_element('whiteboard_board', '/activity/whiteboard/boards/board');
 
         // Return the paths wrapped into standard activity structure.
         return $this->prepare_activity_structure($paths);
@@ -48,16 +48,43 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
         global $DB;
 
         $data = (object)$data;
-        $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-        // See MDL-9367.
+        // Backups of version 1.0 have a board type and ID instead of the link.
+        if (!isset($data->boardurl)) {
+            $data->boardurl = \mod_whiteboard\service::legacy_board_url($data->boardtype ?? null, $data->boardid ?? null);
+        }
+        unset($data->boardtype, $data->boardid);
 
         // Insert the whiteboard record.
         $newitemid = $DB->insert_record('whiteboard', $data);
         // Immediately after inserting "activity" record, call this.
         $this->apply_activity_instance($newitemid);
+    }
+
+    /**
+     * Restores the board of a group or user, if the group or user was restored.
+     *
+     * @param array $data
+     */
+    protected function process_whiteboard_board($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $data->whiteboard = $this->get_new_parentid('whiteboard');
+        if (!empty($data->userid)) {
+            if (!$this->get_setting_value('userinfo')) {
+                return;
+            }
+            $data->userid = $this->get_mappingid('user', $data->userid);
+            $data->groupid = 0;
+        } else {
+            $data->userid = 0;
+            $data->groupid = $this->get_mappingid('group', $data->groupid);
+        }
+        if ($data->groupid || $data->userid) {
+            $DB->insert_record('whiteboard_board', $data);
+        }
     }
 
     /**
@@ -68,4 +95,3 @@ class restore_whiteboard_activity_structure_step extends restore_activity_struct
         $this->add_related_files('mod_whiteboard', 'intro', null);
     }
 }
-

@@ -24,63 +24,56 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once($CFG->dirroot.'/mod/whiteboard/lib.php');
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/mod/whiteboard/lib.php');
+
+use mod_whiteboard\service;
 
 /**
  * Whiteboard module form.
  */
 class mod_whiteboard_mod_form extends moodleform_mod {
-
     /**
-     * Define the mform.
+     * Defines the form.
      */
     public function definition() {
-        global $CFG, $DB, $OUTPUT;
+        global $CFG;
 
-        $mform =& $this->_form;
+        $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
-        // Select the type.
-        $config = get_config('whiteboard');
-        $mform->addElement('text', 'name', get_string('name'), array('size' => '48'));
-        if (!empty($CFG->formatstringstriptags)) {
-            $mform->setType('name', PARAM_TEXT);
-        } else {
-            $mform->setType('name', PARAM_CLEANHTML);
-        }
+        $mform->addElement('text', 'name', get_string('name'), ['size' => '48']);
+        $mform->setType('name', empty($CFG->formatstringstriptags) ? PARAM_CLEANHTML : PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
-        $miro = isset($config->enable_miro) ? $config->enable_miro : '';
-        $conceptboard = isset($config->enable_conceptboard) ? $config->enable_conceptboard : '';
-        $type = array();
-        if ($miro) {
-            $type['miro'] = get_string('MIRO', 'whiteboard');
-        }
-        if ($conceptboard) {
-             $type['conceptboard'] = get_string('Conceptboard', 'whiteboard');
-        }
+        // A link or an embed code, which is reduced to its link when saved.
+        $mform->addElement('text', 'boardurl', get_string('boardurl', 'mod_whiteboard'), ['size' => '64']);
+        $mform->setType('boardurl', PARAM_RAW_TRIMMED);
+        $mform->addRule('boardurl', null, 'required', null, 'client');
+        $mform->addHelpButton('boardurl', 'boardurl', 'mod_whiteboard');
 
-        // Board ID.
-        $mform->addElement('text', 'boardid', get_string('whiteboardid', 'whiteboard'), array('size' => '48'));
-        $mform->setType('boardid', PARAM_TEXT);
-        $mform->addRule('boardid', null, 'required', null, 'client');
-
-        if (count($type) > 1) {
-            $mform->addElement('select', 'boardtype', get_string('boardtypename', 'whiteboard'), $type);
-            $mform->setDefault('boardtype', $config->defaultwhiteboard);
-        } else if (!empty($type)) {
-            $board = reset(array_keys($type));
-            $mform->addElement('hidden', 'boardtype', $board);
-        } else {
-            throw new moodle_exception('boardtypenotavailable');
-        }
+        $mform->addElement('static', 'services', '', service::get_supported_info());
 
         $this->standard_intro_elements();
 
         $this->standard_coursemodule_elements();
 
         $this->add_action_buttons();
+    }
+
+    /**
+     * Checks that the board link belongs to an enabled service.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array Errors
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        if ($error = service::check_input($data['boardurl'] ?? '')) {
+            $errors['boardurl'] = $error;
+        }
+        return $errors;
     }
 }

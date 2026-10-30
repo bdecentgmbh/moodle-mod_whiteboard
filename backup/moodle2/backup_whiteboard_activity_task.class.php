@@ -31,7 +31,6 @@ require_once($CFG->dirroot . '/mod/whiteboard/backup/moodle2/backup_whiteboard_s
  * Provides all the settings and steps to perform one complete backup of the activity
  */
 class backup_whiteboard_activity_task extends backup_activity_task {
-
     /**
      * No specific settings for this activity
      */
@@ -67,4 +66,3 @@ class backup_whiteboard_activity_task extends backup_activity_task {
         return $content;
     }
 }
-

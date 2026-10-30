@@ -30,7 +30,6 @@ require_once($CFG->dirroot . '/mod/whiteboard/backup/moodle2/restore_whiteboard_
  * whiteboard restore task that provides all the settings and steps to perform one complete restore of the activity.
  */
 class restore_whiteboard_activity_task extends restore_activity_task {
-
     /**
      * Define (add) particular settings this activity can have
      */
@@ -51,9 +50,9 @@ class restore_whiteboard_activity_task extends restore_activity_task {
      * processed by the link decoder
      */
     public static function define_decode_contents() {
-        $contents = array();
+        $contents = [];
 
-        $contents[] = new restore_decode_content('whiteboard', array('intro', 'boardtype', 'boardid'), 'whiteboard');
+        $contents[] = new restore_decode_content('whiteboard', ['intro'], 'whiteboard');
 
         return $contents;
     }
@@ -63,7 +62,7 @@ class restore_whiteboard_activity_task extends restore_activity_task {
      * to the activity to be executed by the link decoder
      */
     public static function define_decode_rules() {
-        $rules = array();
+        $rules = [];
         $rules[] = new restore_decode_rule('WHITEBOARDVIEWBYID', '/mod/whiteboard/view.php?id=$1', 'course_module');
         $rules[] = new restore_decode_rule('WHITEBOARDINDEX', '/mod/whiteboard/index.php?id=$1', 'course');
         return $rules;
@@ -76,7 +75,7 @@ class restore_whiteboard_activity_task extends restore_activity_task {
      * of {@see restore_log_rule} objects
      */
     public static function define_restore_log_rules() {
-        $rules = array();
+        $rules = [];
 
         $rules[] = new restore_log_rule('whiteboard', 'add', 'view.php?id={course_module}', '{whiteboard}');
         $rules[] = new restore_log_rule('whiteboard', 'update', 'view.php?id={course_module}', '{whiteboard}');
@@ -96,11 +95,10 @@ class restore_whiteboard_activity_task extends restore_activity_task {
      * activity level. All them are rules not linked to any module instance (cmid = 0)
      */
     public static function define_restore_log_rules_for_course() {
-        $rules = array();
+        $rules = [];
 
         $rules[] = new restore_log_rule('whiteboard', 'view all', 'index.php?id={course}', null);
 
         return $rules;
     }
 }
-

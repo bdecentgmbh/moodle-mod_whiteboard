@@ -15,179 +15,143 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Define for lib functions.
+ * Library of functions of the whiteboard that Moodle calls.
  *
  * @package    mod_whiteboard
  * @copyright  2022 bdecent gmbh <https://bdecent.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 /**
- * Add whiteboard instance.
+ * Adds a whiteboard.
+ *
  * @param stdClass $whiteboard
- * @param mod_whiteboard_mod_form $mform
- * @return int new whiteboard instance id
+ * @param mod_whiteboard_mod_form|null $mform
+ * @return int The id of the whiteboard.
  */
 function whiteboard_add_instance($whiteboard, $mform = null) {
-    global $CFG, $DB, $OUTPUT;
+    global $DB;
+    $whiteboard->boardurl = \mod_whiteboard\service::link_from_input($whiteboard->boardurl ?? '');
     $whiteboard->timecreated = time();
+    $whiteboard->timemodified = $whiteboard->timecreated;
     $whiteboard->id = $DB->insert_record('whiteboard', $whiteboard);
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
-    \core_completion\api::update_completion_date_event($whiteboard->coursemodule,
-        'whiteboard', $whiteboard->id, $completiontimeexpected);
+    \core_completion\api::update_completion_date_event(
+        $whiteboard->coursemodule,
+        'whiteboard',
+        $whiteboard->id,
+        $completiontimeexpected
+    );
     return $whiteboard->id;
 }
 
 /**
- * Update page instance.
+ * Updates a whiteboard.
+ *
  * @param stdClass $whiteboard
- * @param mod_whiteboard_mod_form $mform
- * @return bool true
+ * @param mod_whiteboard_mod_form|null $mform
+ * @return bool
  */
-function whiteboard_update_instance($whiteboard, $mform) {
-    global $CFG, $DB;
+function whiteboard_update_instance($whiteboard, $mform = null) {
+    global $DB;
     $whiteboard->id = $whiteboard->instance;
+    $whiteboard->boardurl = \mod_whiteboard\service::link_from_input($whiteboard->boardurl ?? '');
     $whiteboard->timemodified = time();
     $DB->update_record('whiteboard', $whiteboard);
     $completiontimeexpected = !empty($whiteboard->completionexpected) ? $whiteboard->completionexpected : null;
-    \core_completion\api::update_completion_date_event($whiteboard->coursemodule,
-        'whiteboard', $whiteboard->id, $completiontimeexpected);
+    \core_completion\api::update_completion_date_event(
+        $whiteboard->coursemodule,
+        'whiteboard',
+        $whiteboard->id,
+        $completiontimeexpected
+    );
     return true;
-
 }
 
 /**
- * Delete page instance.
+ * Deletes a whiteboard.
+ *
  * @param int $id
- * @return bool true
+ * @return bool
  */
 function whiteboard_delete_instance($id) {
-    global $CFG, $DB;
+    global $DB;
 
-    if (!$whiteboard = $DB->get_record('whiteboard', array('id' => $id))) {
+    if (!$whiteboard = $DB->get_record('whiteboard', ['id' => $id])) {
         return false;
     }
-    $cm = get_coursemodule_from_instance('whiteboard', $id);
-    \core_completion\api::update_completion_date_event($cm->id, 'whiteboard', $id, null);
-    $DB->delete_records('whiteboard', array('id' => $whiteboard->id));
+    if ($cm = get_coursemodule_from_instance('whiteboard', $id)) {
+        \core_completion\api::update_completion_date_event($cm->id, 'whiteboard', $id, null);
+    }
+    \mod_whiteboard\boards::delete_for_whiteboard($whiteboard->id);
+    $DB->delete_records('whiteboard', ['id' => $whiteboard->id]);
     return true;
 }
 
 /**
- * View the whiteboard
- * @param stdClass $whiteboard
- * @return string
- */
-function whiteboard_view_board($whiteboard) {
-    global $CFG, $DB, $OUTPUT;
-    $parseurl = parse_url($CFG->wwwroot);
-    $protocal = isset($parseurl['scheme']) ? $parseurl['scheme'] : "https";
-    $urlmiro = "miro.com/app/live-embed";
-    $urlconceptboard = "app.conceptboard.com/board/";
-    $boardid = $whiteboard->boardid;
-
-    if ($whiteboard->boardtype == 'miro') {
-        $url = $protocal. "://" . $urlmiro ."/". $boardid;
-    } else {
-        $url = $protocal. "://" . $urlconceptboard ."/". $boardid;
-    }
-
-    $templatecontext = [
-            'url' => $url,
-    ];
-    return $OUTPUT->render_from_template('mod_whiteboard/whiteboard', $templatecontext);
-}
-
-/**
- * List of features supported in Whiteboard module
+ * Returns what the whiteboard supports.
+ *
  * @param string $feature FEATURE_xx constant for requested feature
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function whiteboard_supports($feature) {
-
-    // Add for FEATURE_MOD_PURPOSE.
-    if (defined('FEATURE_MOD_PURPOSE') && $feature === FEATURE_MOD_PURPOSE) {
-        return MOD_PURPOSE_COMMUNICATION;
-    }
-
-    switch($feature) {
-        case FEATURE_GROUPS:
-            return false;
-        case FEATURE_GROUPINGS:
-            return false;
-        case FEATURE_MOD_INTRO:
-            return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS:
-            return true;
+    switch ($feature) {
         case FEATURE_GRADE_HAS_GRADE:
-            return false;
         case FEATURE_GRADE_OUTCOMES:
             return false;
+        case FEATURE_GROUPS:
+        case FEATURE_GROUPINGS:
+        case FEATURE_MOD_INTRO:
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
         case FEATURE_BACKUP_MOODLE2:
-            return true;
         case FEATURE_SHOW_DESCRIPTION:
             return true;
         case FEATURE_MOD_PURPOSE:
-            return MOD_PURPOSE_CONTENT;
+            return MOD_PURPOSE_COLLABORATION;
         default:
             return null;
     }
 }
 
 /**
- * Mark the activity completed (if required) and trigger the course_module_viewed event.
+ * Marks the activity as viewed (for completion) and triggers the course_module_viewed event.
  *
- * @param  stdClass $whiteboard whiteboard object
- * @param  stdClass $course     course object
- * @param  stdClass $cm         course module object
- * @param  stdClass $context    context object
- * @since Moodle 3.0
+ * @param stdClass $whiteboard
+ * @param stdClass $course
+ * @param stdClass|cm_info $cm
+ * @param context_module $context
  */
 function whiteboard_view($whiteboard, $course, $cm, $context) {
-
-    // Trigger course_module_viewed event.
-    $params = array(
+    $event = \mod_whiteboard\event\course_module_viewed::create([
         'context' => $context,
-        'objectid' => $whiteboard->id
-    );
-
-    $event = \mod_whiteboard\event\course_module_viewed::create($params);
+        'objectid' => $whiteboard->id,
+    ]);
     $event->add_record_snapshot('course_modules', $cm);
     $event->add_record_snapshot('course', $course);
     $event->add_record_snapshot('whiteboard', $whiteboard);
     $event->trigger();
 
-    // Completion.
     $completion = new completion_info($course);
     $completion->set_module_viewed($cm);
 }
 
-
 /**
- * This function receives a calendar event and returns the action associated with it, or null if there is none.
+ * Returns the action of a calendar event of the whiteboard ("Expect completed on").
  *
- * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
- * is not displayed on the block.
- *
- * @param object $event
- * @param object $factory
+ * @param calendar_event $event
+ * @param \core_calendar\action_factory $factory
  * @param int $userid
- * @return object|null
+ * @return \core_calendar\local\event\entities\action_interface|null
  */
 function mod_whiteboard_core_calendar_provide_event_action($event, $factory, $userid = 0) {
-
     global $USER;
     if (empty($userid)) {
         $userid = $USER->id;
     }
 
     $cm = get_fast_modinfo($event->courseid, $userid)->instances['whiteboard'][$event->instance];
-
     $completion = new \completion_info($cm->get_course());
-
     $completiondata = $completion->get_data($cm, false, $userid);
-
     if ($completiondata->completionstate != COMPLETION_INCOMPLETE) {
         return null;
     }
@@ -200,79 +164,107 @@ function mod_whiteboard_core_calendar_provide_event_action($event, $factory, $us
     );
 }
 
-
 /**
- * This function is used by the reset_course_userdata function in moodlelib.
- * @param object $data the data submitted from the reset course.
- * @return array status array
+ * Adds the option to delete the boards of users to the course reset form.
+ *
+ * @param MoodleQuickForm $mform
  */
-function whiteboard_reset_userdata($data) {
-
-    // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-    // See MDL-9367.
-
-    return array();
+function whiteboard_reset_course_form_definition(&$mform) {
+    $mform->addElement('header', 'whiteboardheader', get_string('modulenameplural', 'mod_whiteboard'));
+    $mform->addElement('advcheckbox', 'reset_whiteboard_userboards', get_string('resetuserboards', 'mod_whiteboard'));
 }
 
+/**
+ * Returns the defaults of the course reset form.
+ *
+ * @param stdClass $course
+ * @return array
+ */
+function whiteboard_reset_course_form_defaults($course) {
+    return ['reset_whiteboard_userboards' => 1];
+}
 
 /**
- * List the actions that correspond to a view of this module.
- * This is used by the participation report.
+ * Resets the whiteboards of a course: deletes the boards of users if asked to. The boards themselves, and what users
+ * did on them, are kept by the whiteboard service.
  *
- * Note: This is not used by new logging system. Event with
- *       crud = 'r' and edulevel = LEVEL_PARTICIPATING will
- *       be considered as view action.
+ * @param stdClass $data The data submitted from the reset course form.
+ * @return array Status array
+ */
+function whiteboard_reset_userdata($data) {
+    global $DB;
+    if (empty($data->reset_whiteboard_userboards)) {
+        return [];
+    }
+    $whiteboardids = $DB->get_fieldset_select('whiteboard', 'id', 'course = ?', [$data->courseid]);
+    \mod_whiteboard\boards::delete_user_boards($whiteboardids);
+    return [[
+        'component' => get_string('modulenameplural', 'mod_whiteboard'),
+        'item' => get_string('userboardsdeleted', 'mod_whiteboard'),
+        'error' => false,
+    ]];
+}
+
+/**
+ * Lists the log actions that are views, for the participation report.
  *
  * @return array
  */
 function whiteboard_get_view_actions() {
-    return array('view', 'view all');
+    return ['view', 'view all'];
 }
 
 /**
- * List the actions that correspond to a post of this module.
- * This is used by the participation report.
- *
- * Note: This is not used by new logging system. Event with
- *       crud = ('c' || 'u' || 'd') and edulevel = LEVEL_PARTICIPATING
- *       will be considered as post action.
+ * Lists the log actions that are posts, for the participation report.
  *
  * @return array
  */
 function whiteboard_get_post_actions() {
-    return array('update', 'add');
+    return ['update', 'add'];
 }
-
 
 /**
- * Given a course_module object, this function returns any
- * "extra" information that may be needed when printing
- * this activity in a course listing.
+ * Adds the "Boards" page of the boards of groups and users to the navigation of the whiteboard.
  *
- * See {@see course_modinfo::get_array_of_activities()}
- *
- * @param object $coursemodule
- * @return cached_cm_info info
+ * @param settings_navigation $settings
+ * @param navigation_node $whiteboardnode
  */
-function whiteboard_get_coursemodule_info($coursemodule) {
-    global $CFG, $DB;
-
-    if ($whiteboard = $DB->get_record('whiteboard', array('id' => $coursemodule->instance),
-        'id, name, intro, introformat', 'boardtype', 'boardid')) {
-        if (empty($whiteboard->name)) {
-            // Label name missing, fix it.
-            $whiteboard->name = "whiteboard{$whiteboard->id}";
-            $DB->set_field('whiteboard', 'name', $whiteboard->name, array('id' => $whiteboard->id));
-        }
-        $info = new cached_cm_info();
-        $info->name  = $whiteboard->name;
-        return $info;
-    } else {
-        return null;
+function whiteboard_extend_settings_navigation(settings_navigation $settings, navigation_node $whiteboardnode) {
+    $cm = $settings->get_page()->cm;
+    if (!$cm || !has_capability('mod/whiteboard:manageboards', $cm->context)) {
+        return;
     }
+    // Right after the settings of the whiteboard. A key of its own keeps it out of the "More" menu.
+    $keys = $whiteboardnode->get_children_key_list();
+    $i = array_search('modedit', $keys);
+    $beforekey = $i === false ? ($keys[0] ?? null) : ($keys[$i + 1] ?? null);
+    $node = navigation_node::create(
+        get_string('boards', 'mod_whiteboard'),
+        new moodle_url('/mod/whiteboard/boards.php', ['id' => $cm->id]),
+        navigation_node::TYPE_SETTING,
+        null,
+        'mod_whiteboard_boards'
+    );
+    $whiteboardnode->add_node($node, $beforekey);
 }
 
+/**
+ * Returns the information about a whiteboard that the course page needs.
+ *
+ * @param stdClass $coursemodule
+ * @return cached_cm_info|null
+ */
+function whiteboard_get_coursemodule_info($coursemodule) {
+    global $DB;
 
-
-
-
+    $whiteboard = $DB->get_record('whiteboard', ['id' => $coursemodule->instance], 'id, name, intro, introformat');
+    if (!$whiteboard) {
+        return null;
+    }
+    $info = new cached_cm_info();
+    $info->name = $whiteboard->name;
+    if ($coursemodule->showdescription) {
+        $info->content = format_module_intro('whiteboard', $whiteboard, $coursemodule->id, false);
+    }
+    return $info;
+}
